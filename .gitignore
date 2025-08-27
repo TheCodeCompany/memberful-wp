@@ -1,10 +1,19 @@
+build
+node_modules
 .DS_Store
+*.zip
+DNU
 
-# Manage wordpress/wp-content/plugins/memberful-wp and ignore everything else
-# from the wordpress/ folder.
-/wordpress/*
-!/wordpress/wp-content/
-/wordpress/wp-content/*
-!/wordpress/wp-content/plugins
-/wordpress/wp-content/plugins/*
-!/wordpress/wp-content/plugins/memberful-wp
+.idea/
+.claude
+.cursor
+.DS_Store
+.php_cs.cache
+.phpunit.result.cache
+.sass-cache
+.vscode/settings.json
+*.code-workspace
+.windsurf
+.windsurfrules
+.wp-env.override.json
+CLAUDE*

@@ -1,0 +1,51 @@
+{
+	"name": "memberful/memberful-wp",
+	"description": "Sell memberships and restrict access to content with WordPress and Memberful.",
+	"authors": [
+		{
+			"name": "Memberful",
+			"email": "support@memberful.com"
+		}
+	],
+	"keywords": [
+		"wordpress"
+	],
+	"type": "wordpress-plugin",
+	"homepage": "https://github.com/memberful/memberful-wp",
+	"license": "GPL-2.0-or-later",
+	"support": {
+		"issues": "https://github.com/memberful/memberful-wp/issues",
+		"source": "https://github.com/memberful/memberful-wp/"
+	},
+	"require-dev": {
+		"dealerdirect/phpcodesniffer-composer-installer": "*",
+		"phpcompatibility/php-compatibility": "*",
+		"wp-coding-standards/wpcs": "*",
+		"johnpbloch/wordpress-core": "^6.8"
+	},
+	"require": {
+		"php": ">=7.4"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true,
+			"composer/installers": true
+		}
+	},
+	"scripts": {
+		"install-codestandards": [
+			"PHPCSStandards\\Composer\\Plugin\\Installers\\PHPCodeSniffer\\Plugin::run"
+		],
+		"post-install-cmd": [
+			"@install-codestandards"
+		],
+		"build": [
+			"composer update --no-dev",
+			"composer dump-autoload -o --no-dev"
+		],
+		"dev": [
+			"composer update",
+			"composer dump-autoload"
+		]
+	}
+}

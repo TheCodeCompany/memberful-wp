@@ -1,0 +1,33 @@
+{
+	"landingPage": "/wp-admin/options-general.php?page=memberful_options",
+	"steps": [
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"permalink_structure": "/%postname%/"
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginZipFile": {
+				"resource": "wordpress.org/plugins",
+				"slug": "memberful-wp"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "login",
+			"username": "admin",
+			"password": "password"
+		},
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "Memberful Demo",
+				"blogdescription": "Demo site for Memberful WordPress plugin"
+			}
+		}
+	]
+}

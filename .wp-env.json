@@ -1,0 +1,18 @@
+{
+	"core": null,
+	"plugins": [
+		".",
+		"WordPress/classic-editor"
+	],
+	"themes": [
+		"WordPress/theme-experiments"
+	],
+	"env": {
+		"tests": {
+			"phpVersion": "8.1"
+		}
+	},
+	"lifecycleScripts": {
+		"afterStart": "bash scripts/wp-env-after-start.sh"
+	}
+}

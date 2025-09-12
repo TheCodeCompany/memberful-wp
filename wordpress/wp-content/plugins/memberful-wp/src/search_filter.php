@@ -21,12 +21,20 @@ function memberful_wp_protect_search( $query ) {
     return;
   }
 
-  $disallowed_post_ids = memberful_wp_user_disallowed_post_ids( get_current_user_id() );
+  // Check if protected content should be included in search
+  $include_protected_in_search = get_option( 'memberful_include_protected_in_search', FALSE );
+  
+  if ( ! $include_protected_in_search ) {
+    // Original behavior: exclude protected content from search
+    $disallowed_post_ids = memberful_wp_user_disallowed_post_ids( get_current_user_id() );
 
-  // Exclude posts the user is not allowed to see.
-  if ( ! empty( $disallowed_post_ids ) ) {
-    $excluded_post_ids = $query->get( 'post__not_in', array() );
+    // Exclude posts the user is not allowed to see.
+    if ( ! empty( $disallowed_post_ids ) ) {
+      $excluded_post_ids = $query->get( 'post__not_in', array() );
 
-    $query->set( 'post__not_in', array_merge( $excluded_post_ids, $disallowed_post_ids ) );
+      $query->set( 'post__not_in', array_merge( $excluded_post_ids, $disallowed_post_ids ) );
+    }
   }
+  // If include_protected_in_search is TRUE, we don't modify the query
+  // Protected content will appear in search results but will be handled by content protection
 }

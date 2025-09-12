@@ -52,6 +52,18 @@
             <span class="memberful-label__text--multiline">Update display names in WordPress when members change their full name in Memberful.</span>
           </label>
         </p>
+        <div class="memberful-search-settings" style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 15px;">
+          <h3>Search Settings</h3>
+          <p>
+            <label for="include_protected_in_search_checkbox">
+              <input id="include_protected_in_search_checkbox" class="memberful-label__checkbox--multiline" type="checkbox" name="memberful_include_protected_in_search" <?php if( $include_protected_in_search): ?>checked="checked"<?php endif; ?>>
+              <span class="memberful-label__text--multiline">Include protected content in search results (with access warnings).</span>
+            </label>
+          </p>
+          <div class="memberful-search-warning" style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin: 10px 0; border-radius: 4px;">
+            <strong>⚠️ Security Warning:</strong> Enabling this option will allow non-members to see protected content titles and excerpts in search results. While the actual content remains protected, this may expose sensitive information. Only enable this if you want to improve content discoverability for conversion purposes.
+          </div>
+        </div>
         <button type="submit" name="save_changes" class="button button-primary">Save Changes</button>
       </form>
     </div>

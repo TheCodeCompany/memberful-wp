@@ -63,9 +63,62 @@
           <div class="memberful-search-warning" style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin: 10px 0; border-radius: 4px;">
             <strong>⚠️ Security Warning:</strong> Enabling this option will allow non-members to see protected content titles and excerpts in search results. While the actual content remains protected, this may expose sensitive information. Only enable this if you want to improve content discoverability for conversion purposes.
           </div>
+          
+          <div class="memberful-search-options" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #e0e0e0;">
+            <h4 style="margin-top: 0;">Search Display Options</h4>
+            <p>
+              <label for="show_search_disclaimer_checkbox">
+                <input id="show_search_disclaimer_checkbox" class="memberful-label__checkbox--multiline" type="checkbox" name="memberful_show_search_disclaimer" <?php if( $show_search_disclaimer): ?>checked="checked"<?php endif; ?>>
+                <span class="memberful-label__text--multiline">Show disclaimer warning in search result excerpts for protected content.</span>
+              </label>
+            </p>
+            <p>
+              <label for="search_link_destination">
+                <span class="memberful-label__text--multiline">Where should the "Sign up to access" link go?</span><br>
+                <select id="search_link_destination" name="memberful_search_link_destination" style="margin-top: 5px;">
+                  <option value="post" <?php selected( $search_link_destination, 'post' ); ?>>To the protected post/page</option>
+                  <option value="custom_signup" <?php selected( $search_link_destination, 'custom_signup' ); ?>>To custom signup page</option>
+                  <option value="custom_login" <?php selected( $search_link_destination, 'custom_login' ); ?>>To custom login page</option>
+                </select>
+              </label>
+            </p>
+            <div id="custom-url-fields" style="margin-top: 10px; <?php echo (in_array($search_link_destination, ['custom_signup', 'custom_login'])) ? '' : 'display: none;'; ?>">
+              <p>
+                <label for="custom_signup_url">
+                  <span class="memberful-label__text--multiline">Custom Signup URL:</span><br>
+                  <input type="url" id="custom_signup_url" name="memberful_search_custom_signup_url" value="<?php echo esc_attr( $search_custom_signup_url ); ?>" style="width: 100%; margin-top: 5px;" placeholder="https://yoursite.com/signup">
+                </label>
+              </p>
+              <p>
+                <label for="custom_login_url">
+                  <span class="memberful-label__text--multiline">Custom Login URL:</span><br>
+                  <input type="url" id="custom_login_url" name="memberful_search_custom_login_url" value="<?php echo esc_attr( $search_custom_login_url ); ?>" style="width: 100%; margin-top: 5px;" placeholder="https://yoursite.com/login">
+                </label>
+              </p>
+            </div>
+          </div>
         </div>
         <button type="submit" name="save_changes" class="button button-primary">Save Changes</button>
       </form>
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const destinationSelect = document.getElementById('search_link_destination');
+  const customUrlFields = document.getElementById('custom-url-fields');
+  
+  function toggleCustomFields() {
+    const value = destinationSelect.value;
+    if (value === 'custom_signup' || value === 'custom_login') {
+      customUrlFields.style.display = 'block';
+    } else {
+      customUrlFields.style.display = 'none';
+    }
+  }
+  
+  destinationSelect.addEventListener('change', toggleCustomFields);
+  toggleCustomFields(); // Run on page load
+});
+</script>

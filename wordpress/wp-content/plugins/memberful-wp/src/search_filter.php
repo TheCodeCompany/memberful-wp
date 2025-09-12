@@ -37,4 +37,5 @@ function memberful_wp_protect_search( $query ) {
   }
   // If include_protected_in_search is TRUE, we don't modify the query
   // Protected content will appear in search results but will be handled by content protection
+  // Note: This exposes only titles and excerpts, not actual content
 }

@@ -25,7 +25,11 @@ function memberful_wp_all_options() {
     'memberful_use_global_snippets' => TRUE,
     'memberful_global_marketing_override' => TRUE,
     'memberful_global_marketing_content' => '',
-    'memberful_include_protected_in_search' => FALSE
+    'memberful_include_protected_in_search' => FALSE,
+    'memberful_show_search_disclaimer' => TRUE,
+    'memberful_search_link_destination' => 'post',
+    'memberful_search_custom_signup_url' => '',
+    'memberful_search_custom_login_url' => ''
   );
 }
 

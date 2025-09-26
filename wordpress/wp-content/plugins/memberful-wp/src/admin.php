@@ -279,7 +279,6 @@ function memberful_wp_options() {
       update_option( 'memberful_auto_sync_display_names', isset( $_POST['memberful_auto_sync_display_names'] ) );
       update_option( 'memberful_include_protected_in_search', isset( $_POST['memberful_include_protected_in_search'] ) );
       update_option( 'memberful_show_search_disclaimer', isset( $_POST['memberful_show_search_disclaimer'] ) );
-      update_option( 'memberful_search_link_destination', sanitize_text_field( $_POST['memberful_search_link_destination'] ) );
       update_option( 'memberful_search_custom_signup_url', esc_url_raw( $_POST['memberful_search_custom_signup_url'] ) );
       update_option( 'memberful_search_custom_login_url', esc_url_raw( $_POST['memberful_search_custom_login_url'] ) );
       update_option( 'memberful_search_premium_label', sanitize_text_field( $_POST['memberful_search_premium_label'] ) );
@@ -311,6 +310,8 @@ function memberful_wp_options() {
       return memberful_wp_render('cookies_test');
     case 'global_marketing':
       return memberful_wp_global_marketing();
+    case 'search_settings':
+      return memberful_wp_search_settings();
     }
   }
 
@@ -324,7 +325,6 @@ function memberful_wp_options() {
   $auto_sync_display_names = get_option( 'memberful_auto_sync_display_names' );
   $include_protected_in_search = get_option( 'memberful_include_protected_in_search' );
   $show_search_disclaimer = get_option( 'memberful_show_search_disclaimer' );
-  $search_link_destination = get_option( 'memberful_search_link_destination' );
   $search_custom_signup_url = get_option( 'memberful_search_custom_signup_url' );
   $search_custom_login_url = get_option( 'memberful_search_custom_login_url' );
   $search_premium_label = get_option( 'memberful_search_premium_label' );
@@ -345,7 +345,31 @@ function memberful_wp_options() {
       'auto_sync_display_names' => $auto_sync_display_names,
       'include_protected_in_search' => $include_protected_in_search,
       'show_search_disclaimer' => $show_search_disclaimer,
-      'search_link_destination' => $search_link_destination,
+      'search_custom_signup_url' => $search_custom_signup_url,
+      'search_custom_login_url' => $search_custom_login_url,
+      'search_premium_label' => $search_premium_label,
+      'search_disclaimer_text' => $search_disclaimer_text,
+      'search_signup_text' => $search_signup_text,
+      'search_login_text' => $search_login_text
+    )
+  );
+}
+
+function memberful_wp_search_settings() {
+  $include_protected_in_search = get_option( 'memberful_include_protected_in_search' );
+  $show_search_disclaimer = get_option( 'memberful_show_search_disclaimer' );
+  $search_custom_signup_url = get_option( 'memberful_search_custom_signup_url' );
+  $search_custom_login_url = get_option( 'memberful_search_custom_login_url' );
+  $search_premium_label = get_option( 'memberful_search_premium_label' );
+  $search_disclaimer_text = get_option( 'memberful_search_disclaimer_text' );
+  $search_signup_text = get_option( 'memberful_search_signup_text' );
+  $search_login_text = get_option( 'memberful_search_login_text' );
+
+  memberful_wp_render (
+    'search_settings',
+    array(
+      'include_protected_in_search' => $include_protected_in_search,
+      'show_search_disclaimer' => $show_search_disclaimer,
       'search_custom_signup_url' => $search_custom_signup_url,
       'search_custom_login_url' => $search_custom_login_url,
       'search_premium_label' => $search_premium_label,

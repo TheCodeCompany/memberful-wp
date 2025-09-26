@@ -82,28 +82,33 @@ function memberful_wp_add_protection_warning_to_excerpt( $excerpt, $post = null 
       $signup_text = get_option( 'memberful_search_signup_text', 'Sign up to access →' );
       $login_text = get_option( 'memberful_search_login_text', 'Sign in to access →' );
       
-      // Determine the link URL based on setting
-      switch ( $link_destination ) {
-        case 'custom_signup':
-          $custom_url = get_option( 'memberful_search_custom_signup_url', '' );
-          $link_url = ! empty( $custom_url ) ? $custom_url : get_permalink( $post_id );
-          $link_text = $signup_text;
-          break;
-        case 'custom_login':
-          $custom_url = get_option( 'memberful_search_custom_login_url', '' );
-          $link_url = ! empty( $custom_url ) ? $custom_url : get_permalink( $post_id );
-          $link_text = $login_text;
-          break;
-        case 'post':
-        default:
-          $link_url = get_permalink( $post_id );
-          $link_text = $signup_text;
-          break;
-      }
+      // Get custom URLs (these override the default behavior)
+      $custom_signup_url = get_option( 'memberful_search_custom_signup_url', '' );
+      $custom_login_url = get_option( 'memberful_search_custom_login_url', '' );
       
       $warning = '<div class="memberful-search-warning" style="background: #f8f9fa; border-left: 4px solid #d63384; padding: 8px 12px; margin: 8px 0; font-size: 0.9em; color: #6c757d;margin:auto">';
-      $warning .= '<strong>Premium Content:</strong> ' . esc_html( $disclaimer_text ) . ' ';
-      $warning .= '<a href="' . esc_url( $link_url ) . '" style="color: #d63384; text-decoration: none;">' . esc_html( $link_text ) . '</a>';
+      $warning .= '<strong>Premium Content:</strong> ' . esc_html( $disclaimer_text );
+      
+      // Build links based on what's provided
+      $links = array();
+      
+      // Check if signup label is provided (regardless of URL)
+      if ( ! empty( $signup_text ) ) {
+        $signup_url = ! empty( $custom_signup_url ) ? $custom_signup_url : memberful_registration_page_url();
+        $links[] = '<a href="' . esc_url( $signup_url ) . '" style="color: #d63384; text-decoration: none;">' . esc_html( $signup_text ) . '</a>';
+      }
+      
+      // Check if login label is provided (regardless of URL)
+      if ( ! empty( $login_text ) ) {
+        $login_url = ! empty( $custom_login_url ) ? $custom_login_url : memberful_sign_in_url();
+        $links[] = '<a href="' . esc_url( $login_url ) . '" style="color: #d63384; text-decoration: none;">' . esc_html( $login_text ) . '</a>';
+      }
+      
+      // Only add links if at least one label is provided
+      if ( ! empty( $links ) ) {
+        $warning .= ' ' . implode( ' | ', $links );
+      }
+      
       $warning .= '</div>';
       
       // Append warning to excerpt

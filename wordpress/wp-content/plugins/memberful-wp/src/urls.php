@@ -76,6 +76,12 @@ function memberful_wp_plugin_settings_url($no_header = FALSE, $subpage='') {
   return admin_url('options-general.php?page=memberful_options'.$header_parameter.$subpage_parameter);
 }
 
+function memberful_wp_plugin_search_settings_url($no_header = FALSE) {
+  $header_parameter = $no_header === TRUE ? "&noheader=true" : "";
+  
+  return admin_url('options-general.php?page=memberful_options&subpage=search_settings'.$header_parameter);
+}
+
 function memberful_wp_plugin_bulk_protect_url($no_header = FALSE) {
   return memberful_wp_plugin_settings_url($no_header, 'bulk_protect');
 }

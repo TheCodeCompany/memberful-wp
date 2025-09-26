@@ -6,6 +6,11 @@ $links = array(
     'url'   => memberful_wp_plugin_settings_url()
   ),
   array(
+    'id'    => 'search_settings',
+    'title' => __('Search Settings'),
+    'url'   => memberful_wp_plugin_search_settings_url()
+  ),
+  array(
     'id'    => 'bulk_protect',
     'title' => __('Bulk restrict access tool'),
     'url'   => memberful_wp_plugin_bulk_protect_url()

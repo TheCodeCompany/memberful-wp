@@ -64,14 +64,46 @@
             <strong>⚠️ Security Warning:</strong> Enabling this option will allow non-members to see protected content titles and excerpts in search results. While the actual content remains protected, this may expose sensitive information. Only enable this if you want to improve content discoverability for conversion purposes.
           </div>
           
-          <div class="memberful-search-options" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #e0e0e0;">
-            <h4 style="margin-top: 0;">Search Display Options</h4>
-            <p>
-              <label for="show_search_disclaimer_checkbox">
-                <input id="show_search_disclaimer_checkbox" class="memberful-label__checkbox--multiline" type="checkbox" name="memberful_show_search_disclaimer" <?php if( $show_search_disclaimer): ?>checked="checked"<?php endif; ?>>
-                <span class="memberful-label__text--multiline">Show disclaimer warning in search result excerpts for protected content.</span>
-              </label>
-            </p>
+            <div class="memberful-search-options" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #e0e0e0;">
+              <h4 style="margin-top: 0;">Search Display Options</h4>
+              <p>
+                <label for="show_search_disclaimer_checkbox">
+                  <input id="show_search_disclaimer_checkbox" class="memberful-label__checkbox--multiline" type="checkbox" name="memberful_show_search_disclaimer" <?php if( $show_search_disclaimer): ?>checked="checked"<?php endif; ?>>
+                  <span class="memberful-label__text--multiline">Show disclaimer warning in search result excerpts for protected content.</span>
+                </label>
+              </p>
+              
+              <div class="memberful-search-customization" style="margin-top: 15px; padding: 15px; background: #f9f9f9; border-radius: 4px;">
+                <h4 style="margin-top: 0;">Customize Search Messages</h4>
+                <p>
+                  <label for="premium_label">
+                    <span class="memberful-label__text--multiline">Premium Label:</span><br>
+                    <input type="text" id="premium_label" name="memberful_search_premium_label" value="<?php echo esc_attr( $search_premium_label ); ?>" style="width: 100%; margin-top: 5px;" placeholder="Premium">
+                    <small style="color: #666;">This appears next to protected content titles in search results.</small>
+                  </label>
+                </p>
+                <p>
+                  <label for="disclaimer_text">
+                    <span class="memberful-label__text--multiline">Disclaimer Text:</span><br>
+                    <textarea id="disclaimer_text" name="memberful_search_disclaimer_text" style="width: 100%; margin-top: 5px; height: 60px;" placeholder="This content requires a subscription to view."><?php echo esc_textarea( $search_disclaimer_text ); ?></textarea>
+                    <small style="color: #666;">This appears in the disclaimer box for protected content.</small>
+                  </label>
+                </p>
+                <p>
+                  <label for="signup_text">
+                    <span class="memberful-label__text--multiline">Signup Link Text:</span><br>
+                    <input type="text" id="signup_text" name="memberful_search_signup_text" value="<?php echo esc_attr( $search_signup_text ); ?>" style="width: 100%; margin-top: 5px;" placeholder="Sign up to access →">
+                    <small style="color: #666;">Text for the signup link in disclaimers.</small>
+                  </label>
+                </p>
+                <p>
+                  <label for="login_text">
+                    <span class="memberful-label__text--multiline">Login Link Text:</span><br>
+                    <input type="text" id="login_text" name="memberful_search_login_text" value="<?php echo esc_attr( $search_login_text ); ?>" style="width: 100%; margin-top: 5px;" placeholder="Sign in to access →">
+                    <small style="color: #666;">Text for the login link in disclaimers.</small>
+                  </label>
+                </p>
+              </div>
             <p>
               <label for="search_link_destination">
                 <span class="memberful-label__text--multiline">Where should the "Sign up to access" link go?</span><br>

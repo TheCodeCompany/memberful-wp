@@ -32,7 +32,8 @@ function memberful_wp_add_protection_indicator_to_title( $title, $post_id = null
 
   // Check if this post is protected and user doesn't have access
   if ( ! memberful_can_user_access_post( get_current_user_id(), $post_id ) ) {
-    $title .= ' <span class="memberful-protected-indicator" style="color: #d63384; font-size: 0.8em; font-weight: normal;">Premium</span>';
+    $premium_label = get_option( 'memberful_search_premium_label', 'Premium' );
+    $title .= ' <span class="memberful-protected-indicator" style="color: #d63384; font-size: 0.8em; font-weight: normal;">' . esc_html( $premium_label ) . '</span>';
   }
 
   return $title;
@@ -76,27 +77,32 @@ function memberful_wp_add_protection_warning_to_excerpt( $excerpt, $post = null 
     if ( $show_disclaimer ) {
       $link_destination = get_option( 'memberful_search_link_destination', 'post' );
       
+      // Get customizable text options
+      $disclaimer_text = get_option( 'memberful_search_disclaimer_text', 'This content requires a subscription to view.' );
+      $signup_text = get_option( 'memberful_search_signup_text', 'Sign up to access →' );
+      $login_text = get_option( 'memberful_search_login_text', 'Sign in to access →' );
+      
       // Determine the link URL based on setting
       switch ( $link_destination ) {
         case 'custom_signup':
           $custom_url = get_option( 'memberful_search_custom_signup_url', '' );
           $link_url = ! empty( $custom_url ) ? $custom_url : get_permalink( $post_id );
-          $link_text = 'Sign up to access →';
+          $link_text = $signup_text;
           break;
         case 'custom_login':
           $custom_url = get_option( 'memberful_search_custom_login_url', '' );
           $link_url = ! empty( $custom_url ) ? $custom_url : get_permalink( $post_id );
-          $link_text = 'Sign in to access →';
+          $link_text = $login_text;
           break;
         case 'post':
         default:
           $link_url = get_permalink( $post_id );
-          $link_text = 'Sign up to access →';
+          $link_text = $signup_text;
           break;
       }
       
-      $warning = '<div class="memberful-search-warning" style="background: #f8f9fa; border-left: 4px solid #d63384; padding: 8px 12px; margin: 8px 0; font-size: 0.9em; color: #6c757d;">';
-      $warning .= '<strong>Premium Content:</strong> This content requires a subscription to view. ';
+      $warning = '<div class="memberful-search-warning" style="background: #f8f9fa; border-left: 4px solid #d63384; padding: 8px 12px; margin: 8px 0; font-size: 0.9em; color: #6c757d;margin:auto">';
+      $warning .= '<strong>Premium Content:</strong> ' . esc_html( $disclaimer_text ) . ' ';
       $warning .= '<a href="' . esc_url( $link_url ) . '" style="color: #d63384; text-decoration: none;">' . esc_html( $link_text ) . '</a>';
       $warning .= '</div>';
       

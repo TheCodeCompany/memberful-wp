@@ -29,7 +29,11 @@ function memberful_wp_all_options() {
     'memberful_show_search_disclaimer' => TRUE,
     'memberful_search_link_destination' => 'post',
     'memberful_search_custom_signup_url' => '',
-    'memberful_search_custom_login_url' => ''
+    'memberful_search_custom_login_url' => '',
+    'memberful_search_premium_label' => 'Premium',
+    'memberful_search_disclaimer_text' => 'This content requires a subscription to view.',
+    'memberful_search_signup_text' => 'Sign up to access →',
+    'memberful_search_login_text' => 'Sign in to access →'
   );
 }
 

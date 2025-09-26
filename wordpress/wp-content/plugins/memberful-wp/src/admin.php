@@ -282,6 +282,10 @@ function memberful_wp_options() {
       update_option( 'memberful_search_link_destination', sanitize_text_field( $_POST['memberful_search_link_destination'] ) );
       update_option( 'memberful_search_custom_signup_url', esc_url_raw( $_POST['memberful_search_custom_signup_url'] ) );
       update_option( 'memberful_search_custom_login_url', esc_url_raw( $_POST['memberful_search_custom_login_url'] ) );
+      update_option( 'memberful_search_premium_label', sanitize_text_field( $_POST['memberful_search_premium_label'] ) );
+      update_option( 'memberful_search_disclaimer_text', sanitize_textarea_field( $_POST['memberful_search_disclaimer_text'] ) );
+      update_option( 'memberful_search_signup_text', sanitize_text_field( $_POST['memberful_search_signup_text'] ) );
+      update_option( 'memberful_search_login_text', sanitize_text_field( $_POST['memberful_search_login_text'] ) );
 
       return wp_redirect( admin_url( 'options-general.php?page=memberful_options' ) );
     }
@@ -323,6 +327,10 @@ function memberful_wp_options() {
   $search_link_destination = get_option( 'memberful_search_link_destination' );
   $search_custom_signup_url = get_option( 'memberful_search_custom_signup_url' );
   $search_custom_login_url = get_option( 'memberful_search_custom_login_url' );
+  $search_premium_label = get_option( 'memberful_search_premium_label' );
+  $search_disclaimer_text = get_option( 'memberful_search_disclaimer_text' );
+  $search_signup_text = get_option( 'memberful_search_signup_text' );
+  $search_login_text = get_option( 'memberful_search_login_text' );
 
   memberful_wp_render (
     'options',
@@ -339,7 +347,11 @@ function memberful_wp_options() {
       'show_search_disclaimer' => $show_search_disclaimer,
       'search_link_destination' => $search_link_destination,
       'search_custom_signup_url' => $search_custom_signup_url,
-      'search_custom_login_url' => $search_custom_login_url
+      'search_custom_login_url' => $search_custom_login_url,
+      'search_premium_label' => $search_premium_label,
+      'search_disclaimer_text' => $search_disclaimer_text,
+      'search_signup_text' => $search_signup_text,
+      'search_login_text' => $search_login_text
     )
   );
 }

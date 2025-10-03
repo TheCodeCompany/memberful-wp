@@ -286,6 +286,11 @@ function memberful_wp_options() {
       update_option( 'memberful_search_signup_text', sanitize_text_field( $_POST['memberful_search_signup_text'] ) );
       update_option( 'memberful_search_login_text', sanitize_text_field( $_POST['memberful_search_login_text'] ) );
 
+      // Check if we're on a subpage and redirect back to it
+      if ( ! empty( $_GET['subpage'] ) ) {
+        return wp_redirect( admin_url( 'options-general.php?page=memberful_options&subpage=' . $_GET['subpage'] ) );
+      }
+      
       return wp_redirect( admin_url( 'options-general.php?page=memberful_options' ) );
     }
   }

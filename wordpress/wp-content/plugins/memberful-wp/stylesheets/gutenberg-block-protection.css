@@ -1,0 +1,196 @@
+/**
+ * Memberful Gutenberg Block Protection Styles
+ */
+
+/* Block Protection Panel */
+.memberful-block-protection-panel {
+    margin-bottom: 20px;
+}
+
+.memberful-block-protection-panel .components-panel__body-title {
+    font-weight: 600;
+}
+
+.memberful-block-protection-panel .components-toggle-control {
+    margin-bottom: 16px;
+}
+
+.memberful-block-protection-panel .components-select-control {
+    margin-bottom: 16px;
+}
+
+.memberful-block-protection-panel .components-textarea-control {
+    margin-bottom: 16px;
+}
+
+.memberful-block-protection-panel .components-button {
+    margin-top: 16px;
+}
+
+/* Protected Content Messages */
+.memberful-protected-content-message {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 10px 0;
+    color: #6c757d;
+    text-align: center;
+    font-style: italic;
+}
+
+.memberful-protected-content-message:before {
+    content: "🔒 ";
+    margin-right: 5px;
+}
+
+/* Login Form Styling */
+.memberful-protected-content-login {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+.memberful-protected-content-login .memberful-sign-in-form {
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.memberful-protected-content-login .memberful-sign-in-form input[type="email"],
+.memberful-protected-content-login .memberful-sign-in-form input[type="password"] {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.memberful-protected-content-login .memberful-sign-in-form button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007cba;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.memberful-protected-content-login .memberful-sign-in-form button:hover {
+    background-color: #005a87;
+}
+
+/* Block Editor Specific Styles */
+.block-editor-page .memberful-protected-content-message {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.block-editor-page .memberful-protected-content-login {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+/* Inspector Controls */
+.memberful-protection-inspector .components-panel__body-title {
+    color: #007cba;
+}
+
+.memberful-protection-inspector .components-toggle-control__label {
+    font-weight: 500;
+}
+
+.memberful-protection-inspector .components-select-control__label {
+    font-weight: 500;
+}
+
+.memberful-protection-inspector .components-textarea-control__label {
+    font-weight: 500;
+}
+
+/* Loading States */
+.memberful-block-protection-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.memberful-block-protection-loading .components-spinner {
+    margin-right: 10px;
+}
+
+/* Error States */
+.memberful-block-protection-error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    color: #721c24;
+}
+
+/* Success States */
+.memberful-block-protection-success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    color: #155724;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .memberful-protected-content-message,
+    .memberful-protected-content-login {
+        margin: 5px 0;
+        padding: 10px;
+    }
+    
+    .memberful-protected-content-login .memberful-sign-in-form {
+        max-width: 100%;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .memberful-protected-content-message {
+        background-color: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .memberful-protected-content-login {
+        background-color: #1a202c;
+        border-color: #2d3748;
+    }
+    
+    .memberful-protected-content-login .memberful-sign-in-form input[type="email"],
+    .memberful-protected-content-login .memberful-sign-in-form input[type="password"] {
+        background-color: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+}
+
+/* Accessibility */
+.memberful-protected-content-message:focus,
+.memberful-protected-content-login:focus {
+    outline: 2px solid #007cba;
+    outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+    .memberful-protected-content-message,
+    .memberful-protected-content-login {
+        display: none;
+    }
+}

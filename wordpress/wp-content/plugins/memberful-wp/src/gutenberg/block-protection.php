@@ -31,7 +31,7 @@ class Memberful_Block_Protection {
         // Frontend content filtering
         add_filter('render_block', array($this, 'filter_protected_blocks'), 10, 2);
         
-        // Block registration is handled by protected-content-block.php
+        // Block protection is handled directly on existing blocks
         
         // Admin scripts
         add_action('enqueue_block_editor_assets', array($this, 'enqueue_block_editor_assets'));

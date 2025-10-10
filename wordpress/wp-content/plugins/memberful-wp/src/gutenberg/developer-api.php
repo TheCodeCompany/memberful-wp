@@ -212,7 +212,7 @@ class Memberful_Block_Protection_API {
      * Register custom protected blocks
      */
     public function register_custom_protected_blocks() {
-        // Allow developers to register custom protected content blocks
+        // Allow developers to register custom block protection features
         do_action('memberful_register_custom_protected_blocks');
     }
     

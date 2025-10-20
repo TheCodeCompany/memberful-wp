@@ -50,6 +50,7 @@
         'blocks.registerBlockType',
         'memberful/add-protection-attributes',
         function(settings, name) {
+            console.log('Registering block type:', name);
             if (isBlockProtectable(name)) {
                 if (!settings.attributes) {
                     settings.attributes = {};
@@ -64,6 +65,10 @@
                         unauthorizedAction: 'hide'
                     }
                 };
+                
+                console.log('Added memberfulProtection to block:', name);
+                console.log('Block settings after adding attributes:', settings);
+                
             }
             
             return settings;
@@ -81,7 +86,15 @@
                 }
 
                 const { attributes, setAttributes } = props;
-                const protectionSettings = attributes.memberfulProtection || {};
+                const protectionSettings = {
+                    enabled: false,
+                    accessType: 'subscription',
+                    requiredItems: [],
+                    unauthorizedAction: 'hide',
+                    ...attributes.memberfulProtection
+                };
+                
+                
 
                 return wp.element.createElement(
                     wp.element.Fragment,
@@ -103,14 +116,17 @@
                                     label: 'Enable Protection',
                                     checked: protectionSettings.enabled || false,
                                     onChange: function(value) {
+                                        const newSettings = {
+                                            ...protectionSettings,
+                                            enabled: value
+                                        };
+                                        console.log('Saving memberfulProtection:', newSettings);
+                                        console.log('Current attributes before save:', attributes);
                                         setAttributes({
-                                            memberfulProtection: {
-                                                enabled: value,
-                                                accessType: protectionSettings.accessType || 'subscription',
-                                                requiredItems: protectionSettings.requiredItems || [],
-                                                unauthorizedAction: 'hide'
-                                            }
+                                            memberfulProtection: newSettings
                                         });
+                                        console.log('Attributes set, checking if saved...');
+                                        console.log('New attributes after save:', attributes);
                                     }
                                 }
                             ),
@@ -130,10 +146,28 @@
                                         onChange: function(value) {
                                             setAttributes({
                                                 memberfulProtection: {
-                                                    enabled: protectionSettings.enabled,
-                                                    accessType: value,
-                                                    requiredItems: protectionSettings.requiredItems || [],
-                                                    unauthorizedAction: 'hide'
+                                                    ...protectionSettings,
+                                                    accessType: value
+                                                }
+                                            });
+                                        }
+                                    }
+                                ),
+                                wp.element.createElement(
+                                    wp.components.SelectControl,
+                                    {
+                                        label: 'Unauthorized Action',
+                                        value: protectionSettings.unauthorizedAction || 'hide',
+                                        options: [
+                                            { label: 'Hide Block', value: 'hide' },
+                                            { label: 'Show Message', value: 'message' },
+                                            { label: 'Show Login Form', value: 'login_form' }
+                                        ],
+                                        onChange: function(value) {
+                                            setAttributes({
+                                                memberfulProtection: {
+                                                    ...protectionSettings,
+                                                    unauthorizedAction: value
                                                 }
                                             });
                                         }
@@ -147,10 +181,8 @@
                                         onChange: function(value) {
                                             setAttributes({
                                                 memberfulProtection: {
-                                                    enabled: protectionSettings.enabled,
-                                                    accessType: protectionSettings.accessType,
-                                                    requiredItems: value ? [''] : [],
-                                                    unauthorizedAction: 'hide'
+                                                    ...protectionSettings,
+                                                    requiredItems: value ? [''] : []
                                                 }
                                             });
                                         }
@@ -187,10 +219,8 @@
                                                         }
                                                         setAttributes({
                                                             memberfulProtection: {
-                                                                enabled: protectionSettings.enabled,
-                                                                accessType: protectionSettings.accessType,
-                                                                requiredItems: newItems,
-                                                                unauthorizedAction: 'hide'
+                                                                ...protectionSettings,
+                                                                requiredItems: newItems
                                                             }
                                                         });
                                                     }
@@ -230,10 +260,8 @@
                                                         }
                                                         setAttributes({
                                                             memberfulProtection: {
-                                                                enabled: protectionSettings.enabled,
-                                                                accessType: protectionSettings.accessType,
-                                                                requiredItems: newItems,
-                                                                unauthorizedAction: 'hide'
+                                                                ...protectionSettings,
+                                                                requiredItems: newItems
                                                             }
                                                         });
                                                     }

@@ -7,6 +7,8 @@
  * with extensible hooks for third-party developers.
  */
 
+error_log('=== MEMBERFUL BLOCK PROTECTION FILE LOADED ===');
+
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
@@ -24,38 +26,84 @@ class Memberful_Block_Protection {
     }
     
     private function __construct() {
+        error_log('=== MEMBERFUL BLOCK PROTECTION CLASS INITIALIZED ===');
         $this->init_hooks();
     }
     
     private function init_hooks() {
-        // Frontend content filtering
-        add_filter('render_block', array($this, 'filter_protected_blocks'), 10, 2);
+        error_log('=== MEMBERFUL BLOCK PROTECTION HOOKS INITIALIZED ===');
         
-        // Block registration is handled by protected-content-block.php
+        // Test hook to see if the class is working
+        add_action('init', array($this, 'test_init'), 1);
+        
+        // Register block attributes on the server side
+        add_action('init', array($this, 'register_block_attributes'), 999);
+        
+        // Frontend content filtering - use the_content filter as backup
+        add_filter('render_block', array($this, 'filter_protected_blocks'), 10, 2);
+        add_filter('the_content', array($this, 'filter_protected_content'), 10, 1);
         
         // Admin scripts
         add_action('enqueue_block_editor_assets', array($this, 'enqueue_block_editor_assets'));
         
+        // Debug post saving
+        add_action('save_post', array($this, 'debug_post_save'), 10, 2);
+        
+        error_log('=== MEMBERFUL BLOCK PROTECTION HOOKS ADDED ===');
+    }
+    
+    public function test_init() {
+        error_log('=== MEMBERFUL BLOCK PROTECTION INIT HOOK CALLED ===');
+    }
+    
+    public function debug_post_save($post_id, $post) {
+        error_log('=== POST SAVED ===');
+        error_log('Post ID: ' . $post_id);
+        error_log('Post content: ' . substr($post->post_content, 0, 500));
+        
+        // Parse blocks and check for memberfulProtection
+        $blocks = parse_blocks($post->post_content);
+        foreach ($blocks as $block) {
+            if (isset($block['attrs']['memberfulProtection'])) {
+                error_log('Found memberfulProtection in saved post: ' . print_r($block['attrs']['memberfulProtection'], true));
+            }
+        }
     }
     
     /**
      * Filter protected blocks on the frontend
      */
     public function filter_protected_blocks($block_content, $block) {
-        // Skip if not in frontend or user is admin
-        if (is_admin() || current_user_can('publish_posts')) {
+        // Debug: Log that the filter is being called
+        error_log('=== RENDER_BLOCK FILTER CALLED ===');
+        error_log('Block name: ' . $block['blockName']);
+        error_log('Is admin: ' . (is_admin() ? 'YES' : 'NO'));
+        error_log('Block attrs: ' . print_r($block['attrs'], true));
+        
+        // Skip if in admin area (but allow frontend for all users)
+        if (is_admin()) {
+            error_log('Skipping admin area');
             return $block_content;
         }
         
         
+        // Debug: Log all block attributes
+        error_log('=== MEMBERFUL BLOCK PROTECTION DEBUG ===');
+        error_log('Block name: ' . $block['blockName']);
+        error_log('Block attrs: ' . print_r($block['attrs'], true));
+        
         // Check if block has Memberful protection attributes
         if (!isset($block['attrs']['memberfulProtection']) || 
             !$block['attrs']['memberfulProtection']['enabled']) {
+            error_log('No protection enabled for this block');
             return $block_content;
         }
         
         $protection_settings = $block['attrs']['memberfulProtection'];
         $user_id = get_current_user_id();
+        
+        error_log('Protection settings: ' . print_r($protection_settings, true));
+        error_log('User ID: ' . $user_id);
         
         // Allow developers to override access check
         $can_access = apply_filters(
@@ -79,12 +127,47 @@ class Memberful_Block_Protection {
             get_the_ID()
         );
         
+        error_log('Can access: ' . ($can_access ? 'YES' : 'NO'));
+        
         if ($can_access) {
+            error_log('User has access, showing content');
             return $block_content;
         }
         
+        error_log('User does not have access, hiding content');
         // Handle unauthorized access
         return $this->handle_unauthorized_access($block_content, $protection_settings, $user_id);
+    }
+    
+    /**
+     * Filter protected content using the_content filter as backup
+     */
+    public function filter_protected_content($content) {
+        // Skip if in admin area
+        if (is_admin()) {
+            return $content;
+        }
+        
+        error_log('=== THE_CONTENT FILTER CALLED ===');
+        
+        // Parse blocks from content
+        $blocks = parse_blocks($content);
+        if (empty($blocks)) {
+            return $content;
+        }
+        
+        $filtered_content = '';
+        foreach ($blocks as $block) {
+            if (isset($block['blockName']) && isset($block['attrs']['memberfulProtection'])) {
+                error_log('Found protected block in the_content: ' . $block['blockName']);
+                $block_content = render_block($block);
+                $filtered_content .= $this->filter_protected_blocks($block_content, $block);
+            } else {
+                $filtered_content .= render_block($block);
+            }
+        }
+        
+        return $filtered_content;
     }
     
     /**
@@ -130,11 +213,10 @@ class Memberful_Block_Protection {
     }
     
     /**
-     * Handle unauthorized access to blocks (V1: Only supports hiding)
+     * Handle unauthorized access to blocks
      */
     private function handle_unauthorized_access($block_content, $protection_settings, $user_id) {
-        // V1 only supports hiding content completely
-        // Future versions can add more options
+        $unauthorized_action = $protection_settings['unauthorizedAction'] ?? 'hide';
         
         // Allow developers to modify unauthorized content
         $unauthorized_content = apply_filters(
@@ -149,13 +231,66 @@ class Memberful_Block_Protection {
             return $unauthorized_content;
         }
         
-        // For v1, just hide the content
-        return '';
+        switch ($unauthorized_action) {
+            case 'hide':
+                return '';
+                
+            case 'message':
+                $message = apply_filters('memberful_unauthorized_message', 
+                    __('This content is restricted. Please upgrade your membership to access this content.', 'memberful-wp'),
+                    $block_content,
+                    $protection_settings,
+                    $user_id
+                );
+                return '<div class="memberful-unauthorized-message" style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 10px 0; color: #856404; text-align: center;">' . esc_html($message) . '</div>';
+                
+            case 'login_form':
+                $login_url = memberful_sign_in_url();
+                $login_text = apply_filters('memberful_login_text', 
+                    __('Please sign in to access this content.', 'memberful-wp'),
+                    $block_content,
+                    $protection_settings,
+                    $user_id
+                );
+                return '<div class="memberful-login-prompt" style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 4px; padding: 15px; margin: 10px 0; text-align: center;"><a href="' . esc_url($login_url) . '" style="color: #007cba; text-decoration: none; font-weight: 600; padding: 8px 16px; background: #007cba; color: white; border-radius: 4px; display: inline-block;">' . esc_html($login_text) . '</a></div>';
+                
+            default:
+                return apply_filters('memberful_custom_unauthorized_action', '', $block_content, $protection_settings, $user_id, $unauthorized_action);
+        }
     }
     
     
     
     
+    
+    /**
+     * Register block attributes on the server side
+     */
+    public function register_block_attributes() {
+        $block_types = $this->get_protectable_block_types();
+        
+        foreach ($block_types as $block_type) {
+            if (WP_Block_Type_Registry::get_instance()->is_registered($block_type)) {
+                $block = WP_Block_Type_Registry::get_instance()->get_registered($block_type);
+                
+                if (!isset($block->attributes)) {
+                    $block->attributes = array();
+                }
+                
+                $block->attributes['memberfulProtection'] = array(
+                    'type' => 'object',
+                    'default' => array(
+                        'enabled' => false,
+                        'accessType' => 'subscription',
+                        'requiredItems' => array(),
+                        'unauthorizedAction' => 'hide'
+                    )
+                );
+                
+                error_log('Registered memberfulProtection attribute for: ' . $block_type);
+            }
+        }
+    }
     
     /**
      * Enqueue block editor assets
@@ -314,4 +449,6 @@ class Memberful_Block_Protection {
 }
 
 // Initialize the block protection system
+error_log('=== ABOUT TO INITIALIZE MEMBERFUL BLOCK PROTECTION ===');
 Memberful_Block_Protection::instance();
+error_log('=== MEMBERFUL BLOCK PROTECTION INSTANCE CREATED ===');

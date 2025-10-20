@@ -66,7 +66,6 @@ require_once MEMBERFUL_DIR . '/src/filter_account_menu_items.php';
 // Gutenberg Block Protection
 require_once MEMBERFUL_DIR . '/src/gutenberg/block-protection.php';
 require_once MEMBERFUL_DIR . '/src/gutenberg/developer-api.php';
-require_once MEMBERFUL_DIR . '/src/gutenberg/protected-content-block.php';
 
 
 

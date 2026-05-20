@@ -168,6 +168,33 @@ Global Marketing Tools
 }
 
 /*---------------------------------------------------------
+Metering
+------------------------------------------------------------ */
+.memberful-metering-rule-group {
+  margin: 16px 0;
+  padding: 12px;
+  border: 1px solid #dcdcde;
+  background: #f6f7f7;
+}
+.memberful-metering-rule-group h4 {
+  margin: 0 0 10px;
+}
+.memberful-metering-rule-group h4 .button-link {
+  margin-left: 8px;
+}
+.memberful-metering-conditions th,
+.memberful-metering-conditions td {
+  vertical-align: top;
+}
+.memberful-metering-values--post-type {
+  min-width: 180px;
+  min-height: 82px;
+}
+.memberful-metering-condition-values .regular-text {
+  max-width: 360px;
+}
+
+/*---------------------------------------------------------
 Restrict Access Metabox
 ------------------------------------------------------------ */
 #memberful_acl:before,

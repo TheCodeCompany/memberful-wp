@@ -155,6 +155,42 @@ function memberful_wp_admin_enqueue_scripts() {
     );
   }
 
+  if (
+    'memberful_options' === filter_input( INPUT_GET, 'page' )
+    && 'metering' === filter_input( INPUT_GET, 'subpage' )
+  ) {
+    wp_enqueue_script(
+      'memberful-metering-admin',
+      MEMBERFUL_URL . '/js/build/metering-admin.js',
+      array(),
+      MEMBERFUL_VERSION,
+      true
+    );
+
+    wp_localize_script(
+      'memberful-metering-admin',
+      'memberfulMeteringAdmin',
+      array(
+        'fields'    => Memberful_Metering_Config::fields(),
+        'operators' => Memberful_Metering_Config::operators(),
+        'postTypes' => memberful_wp_metering_post_type_options(),
+        'labels'    => array(
+          'actions'           => __( 'Actions', 'memberful' ),
+          'addCondition'      => __( 'Add condition', 'memberful' ),
+          'all'               => __( 'all', 'memberful' ),
+          'any'               => __( 'any', 'memberful' ),
+          'field'             => __( 'Field', 'memberful' ),
+          'group'             => __( 'Rule group', 'memberful' ),
+          'meterContentWhen'  => __( 'Meter content when', 'memberful' ),
+          'ofTheseConditions' => __( 'of these conditions are true:', 'memberful' ),
+          'operator'          => __( 'Operator', 'memberful' ),
+          'remove'            => __( 'Remove', 'memberful' ),
+          'values'            => __( 'Value(s)', 'memberful' ),
+        ),
+      )
+    );
+  }
+
   wp_enqueue_script(
     'memberful-menu',
     plugins_url( 'js/src/menu.js', dirname( __FILE__ ) ),
@@ -327,6 +363,8 @@ function memberful_wp_options() {
       return memberful_wp_render('cookies_test');
     case 'global_marketing':
       return memberful_wp_global_marketing();
+    case 'metering':
+      return memberful_wp_metering_settings();
     case 'ad_provider_settings':
       return memberful_wp_ad_provider_settings();
     }

@@ -103,7 +103,20 @@ function memberful_wp_protect_content( $content ) {
     return memberful_wp_strip_paywall_divider_marker( $content );
   }
 
-  if ( ! memberful_can_user_access_post( wp_get_current_user()->ID, $post->ID ) ) {
+  // Metering decision is computed on template_redirect. Only consult it for
+  // the singular post under view — related posts and page-builder internals
+  // also fire `the_content` and shouldn't burn meter views.
+  $metering_decision = ( (int) $post->ID === (int) get_queried_object_id() )
+    ? Memberful_Metering_Access::get_current_decision( (int) $post->ID )
+    : Memberful_Metering_Access::DECISION_IGNORE;
+
+  if ( Memberful_Metering_Access::DECISION_ALLOW_SAMPLE === $metering_decision ) {
+    return memberful_wp_strip_paywall_divider_marker( $content );
+  }
+
+  $force_metering_gate = ( Memberful_Metering_Access::DECISION_TRIP_METER === $metering_decision );
+
+  if ( $force_metering_gate || ! memberful_can_user_access_post( wp_get_current_user()->ID, $post->ID ) ) {
     // Disable Beaver Builder
     remove_action( "the_content", "FLBuilder::render_content" );
 

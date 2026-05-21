@@ -7,6 +7,10 @@
 
 require_once MEMBERFUL_DIR . '/src/metering/config.php';
 require_once MEMBERFUL_DIR . '/src/metering/sanitizer.php';
+require_once MEMBERFUL_DIR . '/src/metering/storage.php';
+require_once MEMBERFUL_DIR . '/src/metering/access.php';
+
+Memberful_Metering_Access::register();
 
 /**
  * Render and save the metering settings screen.

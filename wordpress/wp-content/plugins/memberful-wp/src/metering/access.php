@@ -25,6 +25,7 @@ class Memberful_Metering_Access {
    */
   public static function register(): void {
     add_action( 'template_redirect', array( __CLASS__, 'on_template_redirect' ) );
+    add_action( 'wp_login', array( __CLASS__, 'on_wp_login' ), 15, 2 );
   }
 
   /**
@@ -101,13 +102,36 @@ class Memberful_Metering_Access {
   }
 
   /**
-   * Anonymous-to-logged-in view carryover.
+   * Carry anonymous (cookie) views over to the user's meta on login, then drop the anonymous cookie.
+   *
+   * Clearing the cookie means a later logout, or a silently expired auth session, falls back to a fresh anonymous
+   * cookie (0 views used). This is an accepted soft-meter limitation. Closing it would need a server-side anonymous
+   * identity, which is deferred to v2 as per the MR-5 requirements.
    *
    * @param string  $user_login The user's login.
    * @param WP_User $user       The user object.
    */
   public static function on_wp_login( string $user_login, WP_User $user ): void {
-    unset( $user_login, $user );
+    unset( $user_login );
+
+    $anonymous_views = Memberful_Metering_Storage::read_anonymous_views();
+    if ( empty( $anonymous_views ) ) {
+      return;
+    }
+
+    $period_days = (int) Memberful_Metering_Config::get()['period_days'];
+    $merged      = Memberful_Metering_Storage::read_user_views( $user->ID );
+
+    foreach ( $anonymous_views as $post_id => $timestamp ) {
+      if ( ! isset( $merged[ $post_id ] ) || $timestamp > $merged[ $post_id ] ) {
+        $merged[ $post_id ] = $timestamp;
+      }
+    }
+
+    $merged = Memberful_Metering_Storage::prune( $merged, $period_days );
+
+    Memberful_Metering_Storage::write_user_views( $user->ID, $merged );
+    Memberful_Metering_Storage::clear_anonymous_cookie();
   }
 
   /**

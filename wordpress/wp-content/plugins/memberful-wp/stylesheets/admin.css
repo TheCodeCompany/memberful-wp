@@ -509,6 +509,7 @@ Paywall Builder
   max-width: 100%;
   width: 100%;
 }
+#memberful_metering_exempt .description,
 .memberful-paywall-builder__customize .description {
   color: #646970;
   display: block;

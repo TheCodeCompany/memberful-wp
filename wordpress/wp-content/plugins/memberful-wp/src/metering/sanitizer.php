@@ -27,8 +27,8 @@ class Memberful_Metering_Sanitizer {
     $period               = absint( $input['period_days'] ?? 0 );
     $clean['period_days'] = $period > 0 ? $period : $defaults['period_days'];
 
-    $clean['anonymous_limit']  = absint( $input['anonymous_limit']  ?? 0 );
-    $clean['registered_limit'] = absint( $input['registered_limit'] ?? 0 );
+    $clean['anonymous_limit']  = min( absint( $input['anonymous_limit']  ?? 0 ), Memberful_Metering_Storage::MAX_VIEWS );
+    $clean['registered_limit'] = min( absint( $input['registered_limit'] ?? 0 ), Memberful_Metering_Storage::MAX_VIEWS );
 
     $clean['rules'] = self::rules( $input['rules'] ?? array() );
 

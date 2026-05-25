@@ -11,7 +11,14 @@
 class Memberful_Metering_Storage {
   const COOKIE_NAME   = 'memberful_metering';
   const USER_META_KEY = 'memberful_metering_views';
-  const MAX_VIEWS     = 200;
+
+  /**
+   * Cookies over 4 KB are dropped by the browser.
+   *
+   * The size is roughly MAX_VIEWS x 20 bytes of JSON, then base64 + HMAC.
+   * At 100 stored entries after base64 + HMAC, the size is ~ 2 KB, at 150 it's ~ 4 KB.
+   */
+  const MAX_VIEWS = 100;
 
   /**
    * Read and verify the anonymous views cookie.

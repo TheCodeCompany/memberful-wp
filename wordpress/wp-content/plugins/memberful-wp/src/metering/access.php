@@ -56,7 +56,10 @@ class Memberful_Metering_Access {
     }
 
     $user_id  = get_current_user_id();
-    $has_paid = $user_id && ! empty( memberful_wp_user_plans_subscribed_to( $user_id ) );
+    $has_paid = $user_id && (
+      ! empty( memberful_wp_user_plans_subscribed_to( $user_id ) )
+      || ! empty( memberful_wp_user_downloads( $user_id ) )
+    );
     if ( $has_paid ) {
       self::cache( $post->ID, self::DECISION_IGNORE );
       return;

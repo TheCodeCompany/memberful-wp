@@ -87,7 +87,7 @@
     });
 
     removeButton.type = 'button';
-    removeButton.className = 'button-link-delete memberful-metering-remove-condition';
+    removeButton.className = 'button memberful-metering-remove-condition';
     removeButton.textContent = labels.remove;
     removeButton.addEventListener('click', () => {
       row.remove();

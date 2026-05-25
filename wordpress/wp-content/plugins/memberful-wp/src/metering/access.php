@@ -73,7 +73,14 @@ class Memberful_Metering_Access {
     }
 
     $period_days = (int) $config['period_days'];
-    $limit       = $user_id ? (int) $config['registered_limit'] : (int) $config['anonymous_limit'];
+    $limit       = max( 0, $user_id ? (int) $config['registered_limit'] : (int) $config['anonymous_limit'] );
+
+    if ( 0 === $limit ) {
+      self::emit_no_cache_headers();
+      self::cache( $post->ID, self::DECISION_TRIP_METER, 0 );
+      return;
+    }
+
     $views       = $user_id
       ? Memberful_Metering_Storage::read_user_views( $user_id )
       : Memberful_Metering_Storage::read_anonymous_views();
@@ -116,6 +123,7 @@ class Memberful_Metering_Access {
 
     $anonymous_views = Memberful_Metering_Storage::read_anonymous_views();
     if ( empty( $anonymous_views ) ) {
+      Memberful_Metering_Storage::clear_anonymous_cookie();
       return;
     }
 
@@ -282,14 +290,32 @@ class Memberful_Metering_Access {
     switch ( $field ) {
       case 'post_type':
         $matches = in_array( $post->post_type, $values, true );
-        return 'is_any_of' === $operator ? $matches : ! $matches;
+
+        if ( 'is_any_of' === $operator ) {
+          return $matches;
+        }
+
+        if ( 'is_none_of' === $operator ) {
+          return ! $matches;
+        }
+
+        return false;
 
       case 'category':
       case 'tag':
         $taxonomy   = 'tag' === $field ? 'post_tag' : 'category';
         $post_terms = self::term_slugs_for_post( $post->ID, $taxonomy );
         $matches    = ! empty( array_intersect( $values, $post_terms ) );
-        return 'has_any' === $operator ? $matches : ! $matches;
+
+        if ( 'has_any' === $operator ) {
+          return $matches;
+        }
+
+        if ( 'has_none' === $operator ) {
+          return ! $matches;
+        }
+
+        return false;
 
       case 'url':
         $path    = wp_parse_url( (string) get_permalink( $post->ID ), PHP_URL_PATH );
@@ -301,7 +327,16 @@ class Memberful_Metering_Access {
             break;
           }
         }
-        return 'contains' === $operator ? $matches : ! $matches;
+
+        if ( 'contains' === $operator ) {
+          return $matches;
+        }
+
+        if ( 'does_not_contain' === $operator ) {
+          return ! $matches;
+        }
+
+        return false;
     }
 
     return false;

@@ -179,16 +179,28 @@ Metering
 .memberful-metering-rule-group h4 {
   margin: 0 0 10px;
 }
-.memberful-metering-rule-group h4 .button-link {
+.memberful-metering-rule-group h4 .button-link,
+.memberful-metering-rule-group h4 .memberful-metering-remove-group {
   margin-left: 8px;
+}
+.button.memberful-metering-remove-condition {
+  border-color: #b32d2e;
+  color: #b32d2e;
+}
+.button.memberful-metering-remove-condition:hover,
+.button.memberful-metering-remove-condition:focus {
+  border-color: #8a2424;
+  color: #8a2424;
 }
 .memberful-metering-conditions th,
 .memberful-metering-conditions td {
   vertical-align: top;
 }
 .memberful-metering-values--post-type {
+  box-sizing: border-box;
   min-width: 180px;
   min-height: 82px;
+  padding: 4px !important;
 }
 .memberful-metering-condition-values .regular-text {
   max-width: 360px;

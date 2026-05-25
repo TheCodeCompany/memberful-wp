@@ -178,7 +178,7 @@ $rules = isset( $config['rules'] ) && is_array( $config['rules'] ) ? array_value
                       <?php endif; ?>
                     </td>
                     <td>
-                      <button type="button" class="button-link-delete memberful-metering-remove-condition"><?php esc_html_e( 'Remove', 'memberful' ); ?></button>
+                      <button type="button" class="button memberful-metering-remove-condition"><?php esc_html_e( 'Remove', 'memberful' ); ?></button>
                     </td>
                   </tr>
                 <?php endforeach; ?>
@@ -190,6 +190,13 @@ $rules = isset( $config['rules'] ) && is_array( $config['rules'] ) ? array_value
       </div>
 
       <p><button type="button" class="button" id="memberful-metering-add-group"><?php esc_html_e( 'Add rule group', 'memberful' ); ?></button></p>
+
+      <div class="notice notice-info inline">
+        <p>
+          <strong><?php esc_html_e( 'Caching:', 'memberful' ); ?></strong>
+          <?php esc_html_e( 'Metered pages vary per visitor, so Memberful serves them as non-cacheable (no-store / DONOTCACHEPAGE). Page-cache plugins such as WP Super Cache, W3 Total Cache, WP Rocket and LiteSpeed honour this automatically. Edge caches such as Cloudflare or Varnish must be configured to bypass metered URLs, or one visitor\'s view could be cached and shown to everyone.', 'memberful' ); ?>
+        </p>
+      </div>
     </div>
 
     <?php submit_button( __( 'Save Changes', 'memberful' ), 'primary', 'save_metering' ); ?>

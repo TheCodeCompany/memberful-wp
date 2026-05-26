@@ -17,7 +17,7 @@ $links = array(
   ),
   array(
     'id'    => 'metering',
-    'title' => __('Metering'),
+    'title' => __( 'Metering', 'memberful' ),
     'url'   => memberful_wp_plugin_metering_url()
   ),
   array(

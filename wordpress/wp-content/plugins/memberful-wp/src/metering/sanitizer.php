@@ -33,7 +33,8 @@ class Memberful_Metering_Sanitizer {
     $clean['anonymous_limit']  = min( $anonymous_limit, Memberful_Metering_Storage::MAX_VIEWS );
     $clean['registered_limit'] = min( $registered_limit, Memberful_Metering_Storage::MAX_VIEWS );
 
-    $clean['rules'] = self::rules( $input['rules'] ?? array() );
+    $clean['rules']         = self::rules( $input['rules'] ?? array() );
+    $clean['exclude_rules'] = self::rules( $input['exclude_rules'] ?? array() );
 
     return $clean;
   }

@@ -162,7 +162,7 @@ function memberful_wp_admin_enqueue_scripts() {
     wp_enqueue_script(
       'memberful-metering-admin',
       MEMBERFUL_URL . '/js/build/metering-admin.js',
-      array(),
+      array( 'wp-api-fetch', 'wp-dom-ready' ),
       MEMBERFUL_VERSION,
       true
     );
@@ -171,21 +171,10 @@ function memberful_wp_admin_enqueue_scripts() {
       'memberful-metering-admin',
       'memberfulMeteringAdmin',
       array(
-        'fields'    => Memberful_Metering_Config::fields(),
         'operators' => Memberful_Metering_Config::operators(),
         'postTypes' => memberful_wp_metering_post_type_options(),
         'labels'    => array(
-          'actions'           => __( 'Actions', 'memberful' ),
-          'addCondition'      => __( 'Add condition', 'memberful' ),
-          'all'               => __( 'all', 'memberful' ),
-          'any'               => __( 'any', 'memberful' ),
-          'field'             => __( 'Field', 'memberful' ),
-          'group'             => __( 'Rule group', 'memberful' ),
-          'meterContentWhen'  => __( 'Meter content when', 'memberful' ),
-          'ofTheseConditions' => __( 'of these conditions are true:', 'memberful' ),
-          'operator'          => __( 'Operator', 'memberful' ),
-          'remove'            => __( 'Remove', 'memberful' ),
-          'values'            => __( 'Value(s)', 'memberful' ),
+          'noResults' => __( 'No matches', 'memberful' ),
         ),
       )
     );

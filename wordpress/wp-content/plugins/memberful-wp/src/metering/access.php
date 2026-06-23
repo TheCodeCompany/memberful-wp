@@ -51,7 +51,12 @@ class Memberful_Metering_Access {
       return;
     }
 
-    if ( ! self::post_matches_any_group( $post, $config['rules'] ) ) {
+    $exclude_rules = $config['exclude_rules'];
+
+    if (
+      ! self::post_matches_any_group( $post, $config['rules'] )
+      || self::post_matches_any_group( $post, $exclude_rules )
+    ) {
       self::cache( $post->ID, self::DECISION_IGNORE );
       return;
     }
@@ -295,10 +300,6 @@ class Memberful_Metering_Access {
           return $matches;
         }
 
-        if ( 'is_none_of' === $operator ) {
-          return ! $matches;
-        }
-
         return false;
 
       case 'category':
@@ -309,10 +310,6 @@ class Memberful_Metering_Access {
 
         if ( 'has_any' === $operator ) {
           return $matches;
-        }
-
-        if ( 'has_none' === $operator ) {
-          return ! $matches;
         }
 
         return false;
@@ -330,10 +327,6 @@ class Memberful_Metering_Access {
 
         if ( 'contains' === $operator ) {
           return $matches;
-        }
-
-        if ( 'does_not_contain' === $operator ) {
-          return ! $matches;
         }
 
         return false;

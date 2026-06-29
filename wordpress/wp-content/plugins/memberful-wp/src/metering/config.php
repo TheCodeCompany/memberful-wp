@@ -14,11 +14,13 @@ class Memberful_Metering_Config {
   const MATCH_TYPES = array( 'all', 'any' );
 
   const FIELD_OPERATORS = array(
-    'post_type' => array( 'is_any_of' ),
-    'category'  => array( 'has_any' ),
-    'tag'       => array( 'has_any' ),
-    'url'       => array( 'contains' ),
+    'post_type' => array( 'is_any_of', 'is_none_of' ),
+    'category'  => array( 'has_any', 'has_none' ),
+    'tag'       => array( 'has_any', 'has_none' ),
+    'url'       => array( 'contains', 'does_not_contain' ),
   );
+
+  const NEGATIVE_OPERATORS = array( 'is_none_of', 'has_none', 'does_not_contain' );
 
   /**
    * Canonical default configuration shape.
@@ -85,20 +87,23 @@ class Memberful_Metering_Config {
    * @return array
    */
   public static function operators(): array {
-    return array(
-      'post_type' => array(
-        'is_any_of' => __( 'is any of', 'memberful' ),
-      ),
-      'category'  => array(
-        'has_any' => __( 'has any of', 'memberful' ),
-      ),
-      'tag'       => array(
-        'has_any' => __( 'has any of', 'memberful' ),
-      ),
-      'url'       => array(
-        'contains' => __( 'contains', 'memberful' ),
-      ),
+    $labels = array(
+      'is_any_of'        => __( 'is any of', 'memberful' ),
+      'is_none_of'       => __( 'is none of', 'memberful' ),
+      'has_any'          => __( 'has any of', 'memberful' ),
+      'has_none'         => __( 'has none of', 'memberful' ),
+      'contains'         => __( 'contains', 'memberful' ),
+      'does_not_contain' => __( 'does not contain', 'memberful' ),
     );
+
+    $operators = array();
+    foreach ( self::FIELD_OPERATORS as $field => $field_operators ) {
+      foreach ( $field_operators as $operator ) {
+        $operators[ $field ][ $operator ] = $labels[ $operator ];
+      }
+    }
+
+    return $operators;
   }
 
   /**

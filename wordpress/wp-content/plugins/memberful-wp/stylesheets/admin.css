@@ -170,6 +170,9 @@ Global Marketing Tools
 /* ---------------------------------------------------------
 Metering
 ------------------------------------------------------------ */
+.memberful-metering {
+  max-width: 900px;
+}
 .memberful-metering-section-heading {
   font-size: 14px;
   font-weight: 600;

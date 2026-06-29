@@ -103,7 +103,7 @@ $exclude_intro = __( 'Exclude when', 'memberful' );
                 <input type="checkbox" id="memberful_metering_apply_to_protected_posts" name="memberful_metering[apply_to_protected_posts]" value="1" <?php checked( ! empty( $config['apply_to_protected_posts'] ) ); ?>>
                 <span>
                   <?php esc_html_e( "Also count members-only posts toward a visitor's free allowance", 'memberful' ); ?>
-                  <span class="description"><?php esc_html_e( "When off (recommended), members-only posts always show the paywall and don't use up any of the free reads above. When on, viewing a members-only post burns one of those free reads — even though the visitor still needs a membership to read it.", 'memberful' ); ?></span>
+                  <span class="description"><?php esc_html_e( "When off (recommended), members-only posts always show the paywall and don't use up any of the free reads above. When on, non-members can sample members-only posts — each view uses one free read, and the membership paywall appears once those run out.", 'memberful' ); ?></span>
                 </span>
               </label>
             </div>

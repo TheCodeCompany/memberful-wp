@@ -71,10 +71,20 @@ class Memberful_Metering_Access {
       return;
     }
 
-    $acl_gated = ! memberful_can_user_access_post( $user_id, $post->ID );
-    if ( $acl_gated && empty( $config['apply_to_protected_posts'] ) ) {
-      self::cache( $post->ID, self::DECISION_IGNORE );
-      return;
+    $post_is_protected = ! memberful_can_user_access_post( 0, $post->ID );
+
+    if ( $post_is_protected ) {
+      // Visitors already entitled to the post read it in full and are never metered.
+      if ( $user_id && memberful_can_user_access_post( $user_id, $post->ID ) ) {
+        self::cache( $post->ID, self::DECISION_IGNORE );
+        return;
+      }
+
+      // Otherwise the post only enters the meter when the publisher opted in.
+      if ( empty( $config['apply_to_protected_posts'] ) ) {
+        self::cache( $post->ID, self::DECISION_IGNORE );
+        return;
+      }
     }
 
     $period_days = (int) $config['period_days'];
@@ -199,8 +209,9 @@ class Memberful_Metering_Access {
   }
 
   /**
-   * Whether this request is eligible for metering. Mirrors the early returns in memberful_wp_protect_content() so
-   * the meter never counts a request the content filter would short-circuit.
+   * Whether this request is eligible for metering: a front-end GET view of singular content, and never for site
+   * contributors (anyone who can edit posts, including a post's own author), who see content in full and so are not
+   * metering targets.
    *
    * @return bool
    */
@@ -217,7 +228,7 @@ class Memberful_Metering_Access {
       ? strtoupper( (string) wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
       : '';
 
-    if ( 'GET' !== $method || current_user_can( 'publish_posts' ) ) {
+    if ( 'GET' !== $method || current_user_can( 'edit_posts' ) ) {
       return false;
     }
 
@@ -292,27 +303,24 @@ class Memberful_Metering_Access {
       return false;
     }
 
+    $valid_operators = isset( Memberful_Metering_Config::FIELD_OPERATORS[ $field ] )
+      ? Memberful_Metering_Config::FIELD_OPERATORS[ $field ]
+      : array();
+    if ( ! in_array( $operator, $valid_operators, true ) ) {
+      return false;
+    }
+
     switch ( $field ) {
       case 'post_type':
         $matches = in_array( $post->post_type, $values, true );
-
-        if ( 'is_any_of' === $operator ) {
-          return $matches;
-        }
-
-        return false;
+        break;
 
       case 'category':
       case 'tag':
         $taxonomy   = 'tag' === $field ? 'post_tag' : 'category';
         $post_terms = self::term_slugs_for_post( $post->ID, $taxonomy );
         $matches    = ! empty( array_intersect( $values, $post_terms ) );
-
-        if ( 'has_any' === $operator ) {
-          return $matches;
-        }
-
-        return false;
+        break;
 
       case 'url':
         $path    = wp_parse_url( (string) get_permalink( $post->ID ), PHP_URL_PATH );
@@ -324,15 +332,14 @@ class Memberful_Metering_Access {
             break;
           }
         }
+        break;
 
-        if ( 'contains' === $operator ) {
-          return $matches;
-        }
-
+      default:
         return false;
     }
 
-    return false;
+    // Negative operators (is none of / has none of / does not contain) invert the positive match.
+    return in_array( $operator, Memberful_Metering_Config::NEGATIVE_OPERATORS, true ) ? ! $matches : $matches;
   }
 
   /**

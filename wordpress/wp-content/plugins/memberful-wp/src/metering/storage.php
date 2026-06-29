@@ -163,8 +163,16 @@ class Memberful_Metering_Storage {
     }
 
     $decoded = json_decode( $payload, true );
+    if ( ! is_array( $decoded ) ) {
+      return array();
+    }
 
-    return is_array( $decoded ) ? $decoded : array();
+    // Reject a cookie past its stored expiry. prune()'s rolling window is the real enforcement.
+    if ( isset( $decoded['exp'] ) && (int) $decoded['exp'] < time() ) {
+      return array();
+    }
+
+    return $decoded;
   }
 
   /**

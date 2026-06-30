@@ -50,9 +50,26 @@
   };
 
   const record = (views) => {
-    views[cfg.postId] = nowSeconds();
-    persist(views);
+    if (!Object.prototype.hasOwnProperty.call(views, cfg.postId)) {
+      views[cfg.postId] = nowSeconds();
+      persist(views);
+    }
+
     return views;
+  };
+
+  const endpointPost = (op, keepalive) => {
+    const body = new window.URLSearchParams();
+    body.set('action', cfg.action);
+    body.set('op', op);
+    body.set('post_id', String(cfg.postId));
+    return window.fetch(cfg.ajaxUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+      keepalive: Boolean(keepalive),
+    });
   };
 
   const setTripped = () => {
@@ -65,7 +82,7 @@
       return;
     }
     const template = node.getAttribute('data-memberful-template') || '';
-    node.textContent = template.replace('{count}', String(Math.max(0, remaining)));
+    node.textContent = template.replace(/\{count\}/g, String(Math.max(0, remaining)));
     node.hidden = false;
   };
 
@@ -87,6 +104,7 @@
 
     if (!alreadyCounted) {
       views = record(views);
+      endpointPost('record', true).catch(() => {});
     }
 
     hydrateCountdown(cfg.limit - Object.keys(views).length);
@@ -95,17 +113,7 @@
   const runProtected = () => {
     const container = document.querySelector('.memberful-metering');
 
-    const body = new window.URLSearchParams();
-    body.set('action', cfg.action);
-    body.set('post_id', String(cfg.postId));
-
-    window
-      .fetch(cfg.ajaxUrl, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString(),
-      })
+    endpointPost('sample', false)
       .then((response) => response.json())
       .then((payload) => {
         const data = payload && payload.success ? payload.data : null;

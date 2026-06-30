@@ -259,17 +259,19 @@ function memberful_metering_wrap_protected( string $gated ): string {
  * @return string
  */
 function memberful_wp_render_metered_body( WP_Post $post ): string {
-  memberful_metering_releasing_post_id( (int) $post->ID );
+  $original = isset( $GLOBALS['post'] ) ? $GLOBALS['post'] : null;
 
-  $original        = isset( $GLOBALS['post'] ) ? $GLOBALS['post'] : null;
+  memberful_metering_releasing_post_id( (int) $post->ID );
   $GLOBALS['post'] = $post;
   setup_postdata( $post );
 
-  $html = apply_filters( 'the_content', $post->post_content );
-
-  wp_reset_postdata();
-  $GLOBALS['post'] = $original;
-  memberful_metering_releasing_post_id( 0 );
+  try {
+    $html = apply_filters( 'the_content', $post->post_content );
+  } finally {
+    wp_reset_postdata();
+    $GLOBALS['post'] = $original;
+    memberful_metering_releasing_post_id( 0 );
+  }
 
   return memberful_wp_strip_paywall_divider_marker( $html );
 }

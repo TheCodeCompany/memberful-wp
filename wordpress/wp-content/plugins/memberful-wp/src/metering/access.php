@@ -316,6 +316,45 @@ class Memberful_Metering_Access {
   }
 
   /**
+   * Record an anonymous free-post view into the signed cookie so protected samples draw from the same allowance.
+   *
+   * The free meter is enforced client-side (localStorage); this only mirrors the view server-side. Validates the post
+   * and that it classifies as a free meter target, then records it, so it can't be used to seed arbitrary post IDs.
+   *
+   * @param int $post_id Post ID from the request.
+   *
+   * @return array{recorded: bool, remaining: int}
+   */
+  public static function record_free_view( int $post_id ): array {
+    $skip = array(
+      'recorded'  => false,
+      'remaining' => 0,
+    );
+
+    $post = get_post( $post_id );
+    if ( ! ( $post instanceof WP_Post ) || 'publish' !== $post->post_status ) {
+      return $skip;
+    }
+
+    if ( ! is_post_publicly_viewable( $post ) || post_password_required( $post ) ) {
+      return $skip;
+    }
+
+    $config = Memberful_Metering_Config::get();
+
+    if ( self::RENDER_FREE_METER !== self::classify_post( $post, 0, $config ) ) {
+      return $skip;
+    }
+
+    $result = self::record_and_check( 0, (int) $post_id, (int) $config['period_days'], (int) $config['anonymous_limit'] );
+
+    return array(
+      'recorded'  => $result['allowed'],
+      'remaining' => $result['remaining'],
+    );
+  }
+
+  /**
    * Store a decision in the per-request cache.
    *
    * @param int    $post_id   Post ID.

@@ -34,6 +34,18 @@ class Memberful_Metering_Sample {
       wp_send_json_error( array( 'code' => 'bad_request' ), 400 );
     }
 
+    // Free posts mirror their view here so protected samples share the same allowance; they need no body back.
+    if ( 'record' === filter_input( INPUT_POST, 'op' ) ) {
+      $recorded = Memberful_Metering_Access::record_free_view( $post_id );
+
+      wp_send_json_success(
+        array(
+          'recorded'  => ! empty( $recorded['recorded'] ),
+          'remaining' => (int) $recorded['remaining'],
+        )
+      );
+    }
+
     $result = Memberful_Metering_Access::evaluate_sample( $post_id );
 
     if ( empty( $result['released'] ) ) {

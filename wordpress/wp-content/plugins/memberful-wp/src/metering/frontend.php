@@ -38,7 +38,11 @@ function memberful_metering_enqueue_frontend(): void {
     true
   );
 
-  wp_localize_script( 'memberful-metering', 'memberfulMetering', memberful_metering_runtime_config() );
+  wp_add_inline_script(
+    'memberful-metering',
+    'window.memberfulMetering = ' . wp_json_encode( memberful_metering_runtime_config(), JSON_HEX_TAG ) . ';',
+    'before'
+  );
 }
 
 /**

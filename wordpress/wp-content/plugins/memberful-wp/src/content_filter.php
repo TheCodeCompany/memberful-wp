@@ -98,6 +98,10 @@ function memberful_wp_protect_content( $content ) {
     return memberful_wp_strip_paywall_divider_marker( $content );
   }
 
+  if ( memberful_metering_is_releasing( $post->ID ) ) {
+    return memberful_wp_strip_paywall_divider_marker( $content );
+  }
+
   // Do not filter content for admins
   if ( current_user_can( 'publish_posts' ) ) {
     return memberful_wp_strip_paywall_divider_marker( $content );
@@ -152,6 +156,124 @@ function memberful_wp_protect_content( $content ) {
 }
 
 add_filter( 'memberful_wp_protect_content','wptexturize');
+
+/**
+ * Get or set the post ID whose full body the sample endpoint is currently releasing (0 when idle).
+ *
+ * @param int|null $set New value to set, or null to just read.
+ *
+ * @return int
+ */
+function memberful_metering_releasing_post_id( ?int $set = null ): int {
+  static $current = 0;
+
+  if ( null !== $set ) {
+    $current = $set;
+  }
+
+  return $current;
+}
+
+/**
+ * Whether the gate should release post $post_id in full because the sample endpoint is rendering it.
+ *
+ * @param int $post_id Post ID.
+ *
+ * @return bool
+ */
+function memberful_metering_is_releasing( int $post_id ): bool {
+  return $post_id > 0 && memberful_metering_releasing_post_id() === $post_id;
+}
+
+/**
+ * Wrap the queried post for the anonymous, cache-safe metering runtime. Runs after the gate (priority 100), so a free
+ * body is intact and a protected body is already reduced to teaser+paywall - we only wrap, never re-gate.
+ *
+ * @param string $content Post content as left by the gate.
+ *
+ * @return string
+ */
+function memberful_metering_render_anonymous( $content ) {
+  global $post;
+
+  if ( ! isset( $post ) || doing_filter( 'memberful_wp_protect_content' ) || memberful_metering_releasing_post_id() ) {
+    return $content;
+  }
+
+  if ( (int) $post->ID !== (int) get_queried_object_id() ) {
+    return $content;
+  }
+
+  $mode = Memberful_Metering_Access::current_anon_mode( (int) $post->ID );
+
+  if ( Memberful_Metering_Access::RENDER_FREE_METER === $mode ) {
+    $paywall = apply_filters( 'memberful_wp_protect_content', memberful_marketing_content( $post->ID ) );
+
+    return memberful_metering_wrap_free( memberful_wp_strip_paywall_divider_marker( $content ), $paywall );
+  }
+
+  if ( Memberful_Metering_Access::RENDER_PROTECTED_SAMPLE === $mode ) {
+    return memberful_metering_wrap_protected( $content );
+  }
+
+  return $content;
+}
+add_filter( 'the_content', 'memberful_metering_render_anonymous', 101 );
+
+/**
+ * Markup for a free metered post: full body (visible) plus the paywall (hidden until the client meter trips).
+ *
+ * @param string $body    Full post body.
+ * @param string $paywall Rendered paywall/marketing markup.
+ *
+ * @return string
+ */
+function memberful_metering_wrap_free( string $body, string $paywall ): string {
+  return sprintf(
+    '<div class="memberful-metering" data-memberful-metering="free"><div class="memberful-metering__content">%s</div><div class="memberful-metering__paywall">%s</div></div>',
+    $body,
+    $paywall
+  );
+}
+
+/**
+ * Markup for a protected sample: the teaser+paywall (visible) plus an empty slot the endpoint fills when released.
+ *
+ * @param string $gated Teaser + paywall produced by the gate.
+ *
+ * @return string
+ */
+function memberful_metering_wrap_protected( string $gated ): string {
+  return sprintf(
+    '<div class="memberful-metering" data-memberful-metering="protected"><div class="memberful-metering__paywall">%s</div><div class="memberful-metering__content" hidden></div></div>',
+    $gated
+  );
+}
+
+/**
+ * Render a post's full body for the sample endpoint: released for this post, still gated for any other post embedded
+ * in the content. Removing no filters keeps related/query-loop protection intact (see memberful_metering_is_releasing).
+ *
+ * @param WP_Post $post Post to render.
+ *
+ * @return string
+ */
+function memberful_wp_render_metered_body( WP_Post $post ): string {
+  memberful_metering_releasing_post_id( (int) $post->ID );
+
+  $original        = isset( $GLOBALS['post'] ) ? $GLOBALS['post'] : null;
+  $GLOBALS['post'] = $post;
+  setup_postdata( $post );
+
+  $html = apply_filters( 'the_content', $post->post_content );
+
+  wp_reset_postdata();
+  $GLOBALS['post'] = $original;
+  memberful_metering_releasing_post_id( 0 );
+
+  return memberful_wp_strip_paywall_divider_marker( $html );
+}
+
 add_filter( 'memberful_wp_protect_content','convert_smilies');
 add_filter( 'memberful_wp_protect_content','convert_chars');
 add_filter( 'memberful_wp_protect_content','wpautop');

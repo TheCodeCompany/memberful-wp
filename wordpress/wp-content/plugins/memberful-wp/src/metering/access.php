@@ -13,12 +13,26 @@ class Memberful_Metering_Access {
   const DECISION_ALLOW_SAMPLE = 'allow_sample';
   const DECISION_TRIP_METER   = 'trip_meter';
 
+  const RENDER_NONE             = 'none';
+  const RENDER_FREE_METER       = 'free_meter';
+  const RENDER_PROTECTED_SAMPLE = 'protected_sample';
+
   /**
    * Per-request decision cache keyed by post ID.
    *
    * @var array<int, array{decision: string, remaining: int}>
    */
   private static $decisions = array();
+
+  /**
+   * Anonymous render mode for the singular post under view (one per request), for the render/enqueue layer.
+   *
+   * @var array{post_id: int, mode: string}
+   */
+  private static $anon_render = array(
+    'post_id' => 0,
+    'mode'    => self::RENDER_NONE,
+  );
 
   /**
    * Register hooks. Called once from src/metering.php.
@@ -29,7 +43,12 @@ class Memberful_Metering_Access {
   }
 
   /**
-   * Compute and cache the metering decision for the singular post under view.
+   * Compute the metering outcome for the singular post under view.
+   *
+   * Logged-in visitors are decided server-side here (their page is never edge-cached). Anonymous visitors only get a
+   * count-agnostic render mode cached for the render layer; their per-visitor enforcement happens client-side
+   * (localStorage, free posts) or via the uncacheable sample endpoint (protected posts), so the page stays cacheable
+   * even on hosts that strip cookies before PHP.
    */
   public static function on_template_redirect(): void {
     if ( ! self::is_metered_request() ) {
@@ -46,29 +65,63 @@ class Memberful_Metering_Access {
       return;
     }
 
-    if ( get_post_meta( $post->ID, 'memberful_metering_exempt', true ) ) {
-      self::cache( $post->ID, self::DECISION_IGNORE );
+    $user_id = get_current_user_id();
+    $mode    = self::classify_post( $post, $user_id, $config );
+
+    if ( self::RENDER_NONE === $mode ) {
       return;
     }
 
-    $exclude_rules = $config['exclude_rules'];
+    if ( $user_id ) {
+      $result = self::record_and_check( $user_id, $post->ID, (int) $config['period_days'], (int) $config['registered_limit'] );
+
+      self::emit_no_cache_headers();
+      self::cache(
+        $post->ID,
+        $result['allowed'] ? self::DECISION_ALLOW_SAMPLE : self::DECISION_TRIP_METER,
+        $result['remaining']
+      );
+      return;
+    }
+
+    self::$anon_render = array(
+      'post_id' => (int) $post->ID,
+      'mode'    => $mode,
+    );
+  }
+
+  /**
+   * Classify a post for metering independent of any view count, so the result is identical for every anonymous
+   * visitor and safe to cache.
+   *
+   * @param WP_Post $post    Post under consideration.
+   * @param int     $user_id Current user ID (0 for anonymous).
+   * @param array   $config  Sanitised metering config.
+   *
+   * @return string One of the RENDER_* constants.
+   */
+  public static function classify_post( WP_Post $post, int $user_id, array $config ): string {
+    if ( empty( $config['enabled'] ) || empty( $config['rules'] ) ) {
+      return self::RENDER_NONE;
+    }
+
+    if ( get_post_meta( $post->ID, 'memberful_metering_exempt', true ) ) {
+      return self::RENDER_NONE;
+    }
 
     if (
       ! self::post_matches_any_group( $post, $config['rules'] )
-      || self::post_matches_any_group( $post, $exclude_rules )
+      || self::post_matches_any_group( $post, $config['exclude_rules'] )
     ) {
-      self::cache( $post->ID, self::DECISION_IGNORE );
-      return;
+      return self::RENDER_NONE;
     }
 
-    $user_id  = get_current_user_id();
     $has_paid = $user_id && (
       ! empty( memberful_wp_user_plans_subscribed_to( $user_id ) )
       || ! empty( memberful_wp_user_downloads( $user_id ) )
     );
     if ( $has_paid ) {
-      self::cache( $post->ID, self::DECISION_IGNORE );
-      return;
+      return self::RENDER_NONE;
     }
 
     $post_is_protected = ! memberful_can_user_access_post( 0, $post->ID );
@@ -76,41 +129,59 @@ class Memberful_Metering_Access {
     if ( $post_is_protected ) {
       // Visitors already entitled to the post read it in full and are never metered.
       if ( $user_id && memberful_can_user_access_post( $user_id, $post->ID ) ) {
-        self::cache( $post->ID, self::DECISION_IGNORE );
-        return;
+        return self::RENDER_NONE;
       }
 
-      // Otherwise the post only enters the meter when the publisher opted in.
+      // Otherwise the post only enters the meter when the publisher opted in; by default the existing hard paywall
+      // handles it.
       if ( empty( $config['apply_to_protected_posts'] ) ) {
-        self::cache( $post->ID, self::DECISION_IGNORE );
-        return;
+        return self::RENDER_NONE;
       }
+
+      return self::RENDER_PROTECTED_SAMPLE;
     }
 
-    $period_days = (int) $config['period_days'];
-    $limit       = max( 0, $user_id ? (int) $config['registered_limit'] : (int) $config['anonymous_limit'] );
+    return self::RENDER_FREE_METER;
+  }
+
+  /**
+   * Record a view (when not already counted) and report whether it is allowed plus how many remain in the window.
+   *
+   * Shared by the logged-in page path (user meta) and the anonymous sample endpoint (signed cookie).
+   *
+   * @param int $user_id     User ID, or 0 for the anonymous cookie store.
+   * @param int $post_id     Post being viewed.
+   * @param int $period_days Rolling-window length in days.
+   * @param int $limit       Views allowed in the window.
+   *
+   * @return array{allowed: bool, remaining: int}
+   */
+  public static function record_and_check( int $user_id, int $post_id, int $period_days, int $limit ): array {
+    $limit = max( 0, $limit );
 
     if ( 0 === $limit ) {
-      self::emit_no_cache_headers();
-      self::cache( $post->ID, self::DECISION_TRIP_METER, 0 );
-      return;
+      return array(
+        'allowed'   => false,
+        'remaining' => 0,
+      );
     }
 
-    $views       = $user_id
+    $views = $user_id
       ? Memberful_Metering_Storage::read_user_views( $user_id )
       : Memberful_Metering_Storage::read_anonymous_views();
-    $views       = Memberful_Metering_Storage::prune( $views, $period_days );
+    $views = Memberful_Metering_Storage::prune( $views, $period_days );
 
-    $already_counted = isset( $views[ $post->ID ] );
+    $already_counted = isset( $views[ $post_id ] );
 
     if ( ! $already_counted && count( $views ) >= $limit ) {
-      self::emit_no_cache_headers();
-      self::cache( $post->ID, self::DECISION_TRIP_METER, 0 );
-      return;
+      return array(
+        'allowed'   => false,
+        'remaining' => 0,
+      );
     }
 
     if ( ! $already_counted ) {
-      $views[ $post->ID ] = time();
+      $views[ $post_id ] = time();
 
       if ( $user_id ) {
         Memberful_Metering_Storage::write_user_views( $user_id, $views );
@@ -119,8 +190,10 @@ class Memberful_Metering_Access {
       }
     }
 
-    self::emit_no_cache_headers();
-    self::cache( $post->ID, self::DECISION_ALLOW_SAMPLE, max( 0, $limit - count( $views ) ) );
+    return array(
+      'allowed'   => true,
+      'remaining' => max( 0, $limit - count( $views ) ),
+    );
   }
 
   /**
@@ -181,6 +254,65 @@ class Memberful_Metering_Access {
     return isset( self::$decisions[ $post_id ]['remaining'] )
       ? (int) self::$decisions[ $post_id ]['remaining']
       : 0;
+  }
+
+  /**
+   * The anonymous render mode cached for a post in this request, or RENDER_NONE.
+   *
+   * @param int $post_id Post ID.
+   *
+   * @return string
+   */
+  public static function current_anon_mode( int $post_id ): string {
+    return self::$anon_render['post_id'] === $post_id ? self::$anon_render['mode'] : self::RENDER_NONE;
+  }
+
+  /**
+   * Whether the singular post under view is an anonymous metered view (free or protected-sample).
+   *
+   * @return bool
+   */
+  public static function is_anon_metered_view(): bool {
+    return self::RENDER_NONE !== self::current_anon_mode( (int) get_queried_object_id() );
+  }
+
+  /**
+   * Server-authoritative decision for the sample endpoint: may an anonymous visitor read this protected post now?
+   *
+   * Re-validates the post and re-classifies it (never trusting the client) before recording against the signed
+   * cookie. Only a published, publicly viewable, password-free post that classifies as a protected sample can release.
+   *
+   * @param int $post_id Post ID from the request.
+   *
+   * @return array{released: bool, remaining: int}
+   */
+  public static function evaluate_sample( int $post_id ): array {
+    $deny = array(
+      'released'  => false,
+      'remaining' => 0,
+    );
+
+    $post = get_post( $post_id );
+    if ( ! ( $post instanceof WP_Post ) || 'publish' !== $post->post_status ) {
+      return $deny;
+    }
+
+    if ( ! is_post_publicly_viewable( $post ) || post_password_required( $post ) ) {
+      return $deny;
+    }
+
+    $config = Memberful_Metering_Config::get();
+
+    if ( self::RENDER_PROTECTED_SAMPLE !== self::classify_post( $post, 0, $config ) ) {
+      return $deny;
+    }
+
+    $result = self::record_and_check( 0, (int) $post_id, (int) $config['period_days'], (int) $config['anonymous_limit'] );
+
+    return array(
+      'released'  => $result['allowed'],
+      'remaining' => $result['remaining'],
+    );
   }
 
   /**

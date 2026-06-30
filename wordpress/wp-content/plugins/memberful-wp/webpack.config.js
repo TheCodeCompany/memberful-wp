@@ -7,5 +7,6 @@ module.exports = {
     "editor-scripts": "./js/src/editor-scripts.js",
     "paywall-builder": "./js/src/paywall-builder.js",
     "metering-admin": "./js/src/metering-admin.js",
+    "metering": "./js/src/metering.js",
   },
 };

@@ -6,6 +6,7 @@
  *
  * @var bool   $use_global_marketing
  * @var bool   $use_global_snippets
+ * @var int    $paragraph_count
  * @var bool   $global_marketing_override
  * @var string $global_marketing_content
  * @var array  $paywall_config
@@ -48,9 +49,16 @@
 						<input id="use_global_snippets_checkbox" class="memberful-label__checkbox--multiline" type="checkbox" name="memberful_use_global_snippets" <?php checked( $use_global_snippets ); ?>>
 						<small class="memberful-label__text--multiline">
 							<strong><?php esc_html_e( 'Automatically pull an excerpt from each post.', 'memberful' ); ?></strong>
-							<?php esc_html_e( ' Memberful will pull the first two paragraphs from each protected post to use as marketing content for logged out visitors. This feature requires <p> tags in your posts to detect which content to use. If a post contains a Memberful Paywall Divider block, all content above the divider will be shown instead of the excerpt.', 'memberful' ); ?>
+							<?php esc_html_e( ' Memberful will pull the opening paragraphs from each protected post to use as marketing content for logged out visitors. This feature requires <p> tags in your posts to detect which content to use. If a post contains a Memberful Paywall Divider block, all content above the divider will be shown instead of the excerpt.', 'memberful' ); ?>
 						</small>
 					</label>
+
+					<div id="global_marketing_paragraph_count_option" data-depends-on="use_global_snippets_checkbox" data-depends-value="1"<?php if ( ! $use_global_snippets ) echo ' style="display:none"'; ?>>
+						<p class="memberful-paywall-builder__field">
+							<label for="memberful_paragraph_count"><?php esc_html_e( 'Paragraphs before paywall', 'memberful' ); ?></label>
+							<input id="memberful_paragraph_count" type="number" min="1" max="10" name="memberful_paragraph_count" value="<?php echo esc_attr( max( 1, (int) $paragraph_count ) ); ?>">
+						</p>
+					</div>
 				</div>
 			</div>
 

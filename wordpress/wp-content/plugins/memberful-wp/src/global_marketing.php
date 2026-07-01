@@ -75,8 +75,9 @@ function memberful_apply_global_snippets_content_filter( $memberful_marketing_co
 
   if ( !empty( $original_content ) ) {
     $teaser_offset = 0;
+    $paragraph_count = min( 10, max( 1, (int) get_option( 'memberful_paragraph_count', MEMBERFUL_PARAGRAPH_COUNT ) ) );
 
-    for ( $i = 0; $i < MEMBERFUL_PARAGRAPH_COUNT; $i++ ) {
+    for ( $i = 0; $i < $paragraph_count; $i++ ) {
       $paragraph_offset = strpos( $original_content, '</p>', $teaser_offset );
 
       if ( $paragraph_offset === false ) {

@@ -83,7 +83,7 @@ function memberful_apply_global_snippets_content_filter( $memberful_marketing_co
     }
   }
 
-  $wrapped_teaser = "<div class='memberful-global-teaser-content'>$teaser</div>";
+  $wrapped_teaser = memberful_wp_wrap_teaser_content( $teaser );
 
   if ( $has_teaser && ! did_filter( 'memberful_teaser_css' ) ) {
     $wrapped_teaser .= apply_filters( 'memberful_teaser_css', memberful_get_teaser_css() );

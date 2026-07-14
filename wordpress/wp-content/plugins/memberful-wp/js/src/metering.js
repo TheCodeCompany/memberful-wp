@@ -104,7 +104,6 @@
 
     if (!alreadyCounted) {
       views = record(views);
-      endpointPost('record', true).catch(() => {});
     }
 
     hydrateCountdown(cfg.limit - Object.keys(views).length);

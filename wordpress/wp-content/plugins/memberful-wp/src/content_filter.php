@@ -144,7 +144,7 @@ function memberful_wp_protect_content( $content ) {
   }
 
   if ( $content_split['has_divider'] ) {
-    // Keep the divider marker for the queried post's anonymous free-meter view so the metering render can show th
+    // Keep the divider marker for the queried post's anonymous free-meter view so the metering render can show the
     // above-divider content as the teaser once the client meter trips.
     if (
       $post->ID === get_queried_object_id()

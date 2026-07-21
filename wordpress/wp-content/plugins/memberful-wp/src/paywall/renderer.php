@@ -155,11 +155,49 @@ class Memberful_Paywall_Renderer {
    * @return string
    */
   private static function render_inner( array $config ): string {
-    return self::heading_block( $config )
+    return self::meter_block( $config )
+           . self::heading_block( $config )
            . self::subheading_block( $config )
            . self::features_block( $config )
            . '<div class="memberful-paywall__actions">' . self::primary_cta( $config ) . '</div>'
            . self::sign_in_prompt( $config );
+  }
+
+  /**
+   * Free-view counter eyebrow. Rendered only when enabled and the current view is metered — a listener on
+   * memberful_paywall_free_view_limit returns the applicable limit, and null (the default) hides it on non-metered
+   * paywalls (the same builder markup also fronts the hard paywall for members-only posts).
+   *
+   * @param array $config Sanitized config.
+   *
+   * @return string
+   */
+  private static function meter_block( array $config ): string {
+    if ( empty( $config['show_counter'] ) ) {
+      return '';
+    }
+
+    $template = (string) $config['counter_template'];
+    if ( '' === trim( $template ) ) {
+      return '';
+    }
+
+    /**
+     * Filter the free-view limit shown in the paywall counter. Return null (the default) to hide the counter when the
+     * current view is not metered; the metering module returns the applicable anonymous or registered limit.
+     *
+     * @param int|null $limit  Applicable free-view limit, or null when the current view is not metered.
+     * @param array    $config Sanitized paywall config.
+     */
+    $limit = apply_filters( 'memberful_paywall_free_view_limit', null, $config );
+    if ( null === $limit ) {
+      return '';
+    }
+
+    return sprintf(
+      '<p class="memberful-paywall__meter">%s</p>',
+      esc_html( str_replace( '{limit}', number_format_i18n( (int) $limit ), $template ) )
+    );
   }
 
   /**
@@ -271,6 +309,8 @@ class Memberful_Paywall_Renderer {
     $brand_color = isset( $config['brand_color'] ) ? sanitize_hex_color( (string) $config['brand_color'] ) : '';
     if ( ! empty( $brand_color ) ) {
       $parts[] = '--memberful-brand:' . $brand_color;
+      // Keep the button/lock glyph legible on a configured accent (e.g. a light brand needs dark text).
+      $parts[] = '--memberful-button-text:' . Memberful_Paywall_Color::contrast_text_color( $brand_color );
     }
 
     $background_color = isset( $config['background_color'] ) ? sanitize_hex_color( (string) $config['background_color'] ) : '';

@@ -89,6 +89,19 @@
         </template>
       </fieldset>
 
+      <div class="memberful-paywall-builder__field">
+        <label>
+          <input type="checkbox" id="memberful-paywall-show-counter" name="memberful_paywall[show_counter]" value="1" <?php checked( ! empty( $paywall_config['show_counter'] ) ); ?>>
+          <?php esc_html_e( 'Show the free-view count', 'memberful' ); ?>
+        </label>
+        <span class="description"><?php esc_html_e( 'Only appears on metered posts. Use {limit} for the number of free views.', 'memberful' ); ?></span>
+      </div>
+
+      <p class="memberful-paywall-builder__field">
+        <label for="memberful-paywall-counter-template"><?php esc_html_e( 'Free-view message', 'memberful' ); ?></label>
+        <input id="memberful-paywall-counter-template" type="text" name="memberful_paywall[counter_template]" value="<?php echo esc_attr( $paywall_config['counter_template'] ); ?>">
+      </p>
+
       <p class="memberful-paywall-builder__field">
         <label for="memberful-paywall-button-label"><?php esc_html_e( 'Button label', 'memberful' ); ?></label>
         <input id="memberful-paywall-button-label" type="text" name="memberful_paywall[button_label]" value="<?php echo esc_attr( $paywall_config['button_label'] ); ?>">

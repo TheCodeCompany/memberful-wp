@@ -17,19 +17,6 @@ Memberful_Metering_Access::register();
 Memberful_Metering_Metabox::register();
 Memberful_Metering_Sample::register();
 
-add_action( 'update_option_' . Memberful_Metering_Config::OPTION_KEY, 'memberful_metering_purge_page_cache' );
-add_action( 'add_option_' . Memberful_Metering_Config::OPTION_KEY, 'memberful_metering_purge_page_cache' );
-
-/**
- * Cached metered pages embed the limit/period in their runtime config, so a settings change needs a page-cache purge
- * to take effect before the cache TTL expires.
- */
-function memberful_metering_purge_page_cache(): void {
-  wp_cache_flush();
-
-  do_action( 'memberful_metering_settings_changed' );
-}
-
 /**
  * Render and save the metering settings screen.
  */

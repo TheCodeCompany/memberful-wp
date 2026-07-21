@@ -132,23 +132,27 @@ function memberful_wp_protect_content( $content ) {
     // Remove media enclosures from the RSS feed
     add_filter("rss_enclosure", "__return_empty_string");
 
-    $memberful_marketing_content = memberful_marketing_content( $post->ID );
+    $rendered_marketing_content = memberful_wp_resolve_paywall_content( (int) $post->ID );
 
     if ( $content_split['has_divider'] ) {
       $content_above_divider = memberful_wp_format_divider_teaser_content( $content_split['content_above_divider'] );
-      $rendered_marketing_content = apply_filters( 'memberful_wp_protect_content', $memberful_marketing_content );
 
-      if ( '' !== trim( (string) $rendered_marketing_content ) ) {
-        return $content_above_divider . $rendered_marketing_content;
-      }
-
-      return $content_above_divider;
+      return $content_above_divider . $rendered_marketing_content;
     }
 
-    return apply_filters( 'memberful_wp_protect_content', $memberful_marketing_content );
+    return $rendered_marketing_content;
   }
 
   if ( $content_split['has_divider'] ) {
+    // Keep the divider marker for the queried post's anonymous free-meter view so the metering render can show th
+    // above-divider content as the teaser once the client meter trips.
+    if (
+      $post->ID === get_queried_object_id()
+      && Memberful_Metering_Access::RENDER_FREE_METER === Memberful_Metering_Access::current_anon_mode( $post->ID )
+    ) {
+      return $content;
+    }
+
     return $content_split['content_above_divider'] . $content_split['content_below_divider'];
   }
 
@@ -207,7 +211,12 @@ function memberful_metering_render_anonymous( $content ) {
   $mode = Memberful_Metering_Access::current_anon_mode( (int) $post->ID );
 
   if ( Memberful_Metering_Access::RENDER_FREE_METER === $mode ) {
-    $paywall = apply_filters( 'memberful_wp_protect_content', memberful_marketing_content( $post->ID ) );
+    $paywall = memberful_wp_resolve_paywall_content( (int) $post->ID );
+    $split   = memberful_wp_split_post_content_at_paywall_divider( $content );
+
+    if ( $split['has_divider'] ) {
+      $paywall = memberful_wp_format_divider_teaser_content( $split['content_above_divider'] ) . $paywall;
+    }
 
     return memberful_metering_wrap_free( memberful_wp_strip_paywall_divider_marker( $content ), $paywall );
   }
@@ -249,6 +258,74 @@ function memberful_metering_wrap_protected( string $gated ): string {
     $gated
   );
 }
+
+/**
+ * Resolve the paywall/marketing HTML for a gated post, substituting a default members-only message when nothing is
+ * configured so the paywall region is never blank (e.g. a metered post while global marketing content is turned off,
+ * where the post has no marketing content of its own).
+ *
+ * @param int $post_id Post ID.
+ *
+ * @return string
+ */
+function memberful_wp_resolve_paywall_content( int $post_id ): string {
+  $rendered = apply_filters( 'memberful_wp_protect_content', memberful_marketing_content( $post_id ) );
+
+  if ( '' !== trim( (string) $rendered ) ) {
+    return $rendered;
+  }
+
+  return memberful_wp_default_paywall_content();
+}
+
+/**
+ * Minimal, theme-native fallback shown in place of an unconfigured paywall so readers (and editors previewing the post)
+ * always see why the content is gated. Configuring marketing content or the paywall replaces it.
+ *
+ * @return string
+ */
+function memberful_wp_default_paywall_content(): string {
+  return sprintf(
+    '<div class="memberful-metering__notice"><p>%1$s</p><p><a href="%2$s">%3$s</a> &middot; <a href="%4$s">%5$s</a></p></div>',
+    esc_html__( 'This content is available to members.', 'memberful' ),
+    esc_url( memberful_registration_page_url() ),
+    esc_html__( 'Subscribe', 'memberful' ),
+    esc_url( memberful_sign_in_url() ),
+    esc_html__( 'Sign in', 'memberful' )
+  );
+}
+
+/**
+ * Supply the free-view limit for the paywall counter when the queried post is a tripped metered view, so the paywall
+ * can show e.g. "You've used all N of your free articles". Returns the incoming value (null) otherwise, which keeps the
+ * counter hidden on ordinary (non-metered) paywalls that reuse the same builder markup.
+ *
+ * @param int|null $limit Incoming limit (null by default).
+ *
+ * @return int|null
+ */
+function memberful_metering_paywall_free_view_limit( ?int $limit ): ?int {
+  $post_id = get_queried_object_id();
+  if ( 0 === $post_id ) {
+    return $limit;
+  }
+
+  $config = Memberful_Metering_Config::get();
+  if ( empty( $config['enabled'] ) ) {
+    return $limit;
+  }
+
+  if ( Memberful_Metering_Access::RENDER_FREE_METER === Memberful_Metering_Access::current_anon_mode( $post_id ) ) {
+    return (int) $config['anonymous_limit'];
+  }
+
+  if ( Memberful_Metering_Access::DECISION_TRIP_METER === Memberful_Metering_Access::get_current_decision( $post_id ) ) {
+    return (int) $config['registered_limit'];
+  }
+
+  return $limit;
+}
+add_filter( 'memberful_paywall_free_view_limit', 'memberful_metering_paywall_free_view_limit' );
 
 /**
  * Render a post's full body for the sample endpoint: released for this post, still gated for any other post embedded

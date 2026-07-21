@@ -26,6 +26,11 @@ class Memberful_Metering_Storage {
   const LEDGER_PREFIX = 'mbf_mtr_l_';
 
   /**
+   * Transient key prefix recording that a subject has previously received protected content.
+   */
+  const PROTECTED_RELEASE_PREFIX = 'mbf_mtr_p_';
+
+  /**
    * Object-cache group for atomic rate-limit counters (used only when a persistent object cache is available).
    */
   const CACHE_GROUP = 'memberful_metering';
@@ -99,8 +104,8 @@ class Memberful_Metering_Storage {
   }
 
   /**
-   * Pass the raw cookie subject through the durable-identity filter (the Fingerprint/Pro seam) so minting, metering,
-   * the login merge, and clearing all key the ledger by the same value.
+   * Resolve the subject that keys a visitor's ledger: the raw cookie id, or a replacement returned by the
+   * memberful_metering_subject_key filter, so minting and metering use the same value.
    *
    * @param string $raw Raw opaque cookie subject.
    *
@@ -108,8 +113,8 @@ class Memberful_Metering_Storage {
    */
   private static function apply_subject_filter( string $raw ): string {
     /**
-     * Filter the anonymous subject key. This is the seam for a durable-identity provider (e.g. a Fingerprint
-     * visitorId) that replaces the opaque-cookie id with a device-attested one without changing the transport.
+     * Filter the opaque key that identifies an anonymous visitor's meter. Passed the cookie-backed subject id; return
+     * a non-empty string to replace it.
      *
      * @param string $raw The opaque, cookie-backed subject id.
      */
@@ -144,13 +149,65 @@ class Memberful_Metering_Storage {
    * @param string          $subject     Subject id.
    * @param array<int, int> $views       Map of post_id => unix timestamp.
    * @param int             $period_days Rolling-window length; also the transient TTL.
+   *
+   * @return bool Whether the ledger was persisted.
    */
-  public static function write_ledger_views( string $subject, array $views, int $period_days ): void {
+  public static function write_ledger_views( string $subject, array $views, int $period_days ): bool {
+    if ( '' === $subject ) {
+      return false;
+    }
+
+    return set_transient(
+      self::ledger_key( $subject ),
+      self::cap( $views ),
+      max( 1, $period_days ) * DAY_IN_SECONDS
+    );
+  }
+
+  /**
+   * Extend the subject cookie after a new distinct view so it remains valid for the ledger's rolling window.
+   *
+   * @param int $period_days Rolling-window length in days.
+   */
+  public static function refresh_subject_cookie( int $period_days ): void {
+    $subject = self::read_subject();
+    if ( null === $subject ) {
+      return;
+    }
+
+    $expires = time() + ( max( 1, $period_days ) * DAY_IN_SECONDS );
+    $signed  = self::sign( $subject, $expires );
+
+    self::send_cookie( $signed, $expires );
+    $_COOKIE[ self::COOKIE_NAME ] = $signed;
+  }
+
+  /**
+   * Whether this subject has successfully received protected content during the current rolling period.
+   *
+   * Public views deliberately do not set this marker: otherwise an attacker could record a public post before each
+   * cookie rotation and bypass the cookieless protected-release cap.
+   *
+   * @param string $subject Subject id.
+   *
+   * @return bool
+   */
+  public static function has_protected_release( string $subject ): bool {
+    return '' !== $subject && (bool) get_transient( self::protected_release_key( $subject ) );
+  }
+
+  /**
+   * Mark a successful protected-content release for cookieless-cap exemption on later requests.
+   *
+   * @param string $subject     Subject id.
+   * @param int    $period_days Rolling-window length in days.
+   */
+  public static function mark_protected_release( string $subject, int $period_days ): void {
     if ( '' === $subject ) {
       return;
     }
 
-    set_transient( self::ledger_key( $subject ), self::cap( $views ), max( 1, $period_days ) * DAY_IN_SECONDS );
+    set_transient( self::protected_release_key( $subject ), 1, max( 1, $period_days ) * DAY_IN_SECONDS );
   }
 
   /**
@@ -174,22 +231,14 @@ class Memberful_Metering_Storage {
    *
    * @param int             $user_id WP user ID.
    * @param array<int, int> $views   Map of post_id => unix timestamp.
+   *
+   * @return bool Whether the expected views were persisted.
    */
-  public static function write_user_views( int $user_id, array $views ): void {
-    update_user_meta( $user_id, self::USER_META_KEY, self::cap( $views ) );
-  }
+  public static function write_user_views( int $user_id, array $views ): bool {
+    $views = self::cap( $views );
+    update_user_meta( $user_id, self::USER_META_KEY, $views );
 
-  /**
-   * Drop a subject's ledger and clear its cookie (e.g. after merging into user meta on login).
-   */
-  public static function clear_subject(): void {
-    $subject = self::current_subject();
-    if ( null !== $subject ) {
-      delete_transient( self::ledger_key( $subject ) );
-    }
-
-    self::send_cookie( '', time() - 3600 );
-    unset( $_COOKIE[ self::COOKIE_NAME ] );
+    return self::read_user_views( $user_id ) === $views;
   }
 
   /**
@@ -251,6 +300,17 @@ class Memberful_Metering_Storage {
    */
   private static function ledger_key( string $subject ): string {
     return self::LEDGER_PREFIX . hash( 'sha256', $subject . wp_salt( 'auth' ) );
+  }
+
+  /**
+   * The transient key indicating that a subject has received protected content.
+   *
+   * @param string $subject Subject id.
+   *
+   * @return string
+   */
+  private static function protected_release_key( string $subject ): string {
+    return self::PROTECTED_RELEASE_PREFIX . hash( 'sha256', $subject . wp_salt( 'auth' ) );
   }
 
   /**

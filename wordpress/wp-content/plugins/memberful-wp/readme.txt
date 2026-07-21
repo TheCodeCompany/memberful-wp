@@ -110,7 +110,38 @@ Glad you asked! We manage development of the plugin over at the [Memberful WP Gi
 18. View metrics and revenue reports
 19. View membership information
 
+== For developers ==
+
+The metered paywall exposes a small set of filters, actions and settings for customizing its behavior. The paywall shown when the meter trips is the standard Memberful paywall, so its wording and markup are customized through the marketing-content filters below.
+
+Filters:
+
+* `memberful_metering_subject_key` - filter the opaque key that identifies an anonymous visitor's meter. Passed the cookie-backed subject id; return a non-empty string to replace it.
+* `memberful_metering_cookieless_release_cap` - integer per-IP hourly cap on first protected-sample releases for visitors with no prior release. Return 0 to disable.
+* `memberful_paywall_free_view_limit` - the number shown in the paywall's optional free-view counter (the `{limit}` placeholder). Passed null and the paywall config; return an integer to show the counter, or null to hide it.
+* `memberful_marketing_content` - the marketing/paywall body shown to non-members.
+* `memberful_paywall_protected_content` - the final HTML of the builder paywall, before output.
+* `memberful_paywall_print_styles` - boolean controlling whether the bundled paywall stylesheet is enqueued.
+
+Settings and meta:
+
+* Option `memberful_metering_config` - the metering configuration: `enabled`, `period_days`, `anonymous_limit`, `registered_limit`, `apply_to_protected_posts`, `rules` and `exclude_rules`.
+* Post meta `memberful_metering_exempt` - set to a truthy value to exclude an individual post from metering.
+
+Anonymous and registered visitors have independent allowances: signing up grants the full registered allowance rather than the remainder of the anonymous one, so three anonymous views followed by registration with a limit of five leaves five more, not two.
+
+Blocks:
+
+* `memberful/metering-countdown` - displays a visitor's remaining free views (use the `{count}` placeholder in the block's text).
+* `memberful/paywall-divider` - marks where members-only content begins within a post.
+
 == Changelog ==
+
+= unreleased =
+
+* Meter anonymous public and protected views against a single free allowance
+* Show a default paywall message when a metered post has no marketing content configured
+* Add an optional free-view counter to the paywall design
 
 = 1.78.0 =
 

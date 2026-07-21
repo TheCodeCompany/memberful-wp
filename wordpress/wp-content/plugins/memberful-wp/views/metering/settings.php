@@ -63,6 +63,20 @@ $exclude_intro = __( 'Exclude when', 'memberful' );
         </label>
       </div>
 
+      <?php if ( ! empty( $config['enabled'] ) && ! get_option( 'memberful_use_global_marketing' ) ) : ?>
+        <div class="notice notice-warning inline">
+          <p>
+            <?php
+            printf(
+              /* translators: %s: URL of the paywall / global marketing settings screen. */
+              wp_kses_post( __( 'Metering is on, but no paywall content is configured, so metered posts show a generic default message. <a href="%s">Set up your paywall</a> to customise what non-members see.', 'memberful' ) ),
+              esc_url( memberful_wp_plugin_global_marketing_url() )
+            );
+            ?>
+          </p>
+        </div>
+      <?php endif; ?>
+
       <div class="memberful-metering-section">
         <h4 class="memberful-metering-section-heading"><?php esc_html_e( 'Free reading limits', 'memberful' ); ?></h4>
         <p class="memberful-metering-section-intro"><?php esc_html_e( 'How many matching posts a visitor can read before the paywall appears.', 'memberful' ); ?></p>
@@ -138,7 +152,7 @@ $exclude_intro = __( 'Exclude when', 'memberful' );
             <span><?php esc_html_e( 'Caching & hosting notes', 'memberful' ); ?></span>
           </summary>
           <div class="memberful-metering-notes__body">
-            <p><?php esc_html_e( 'Metered pages vary per visitor, so Memberful serves them as non-cacheable (no-store / DONOTCACHEPAGE). Page-cache plugins such as WP Super Cache, W3 Total Cache, WP Rocket and LiteSpeed honour this automatically. Edge caches such as Cloudflare or Varnish must be configured to bypass metered URLs, or one visitor\'s view could be cached and shown to everyone.', 'memberful' ); ?></p>
+            <p><?php esc_html_e( 'Metered pages stay cacheable for logged-out visitors: Memberful serves everyone the same HTML and applies each visitor\'s remaining free-view count in the browser (free posts) or through a separate uncacheable request (protected samples). Only a signed-in visitor\'s own metered view is served non-cacheable (no-store / DONOTCACHEPAGE), and signed-in pages are not page-cached to begin with. Page-cache plugins such as WP Super Cache, W3 Total Cache, WP Rocket and LiteSpeed need no special setup, and URL-keyed edge caches such as Cloudflare or Varnish are safe because the cached HTML carries no per-visitor data.', 'memberful' ); ?></p>
           </div>
         </details>
       </div>

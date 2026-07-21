@@ -72,6 +72,8 @@ jQuery(function ($) {
       brand_color:      $('#memberful-paywall-brand-color').val() || '',
       background_color: $('#memberful-paywall-background-color').val() || '',
       button_shape:     $('input[name="memberful_paywall[button_shape]"]:checked').val() || 'rounded',
+      show_counter:     $('#memberful-paywall-show-counter').is(':checked') ? '1' : '',
+      counter_template: $('#memberful-paywall-counter-template').val() || '',
     };
   }
 
@@ -132,7 +134,7 @@ jQuery(function ($) {
   }
 
   $form.on('input', 'input[type="text"], input[type="url"], textarea', scheduleRefresh);
-  $form.on('change', 'input[type="radio"], select', refreshPreview);
+  $form.on('change', 'input[type="radio"], input[type="checkbox"], select', refreshPreview);
 
   $form.on('click', '.memberful-paywall-builder__benefit-add', function (e) {
     e.preventDefault();

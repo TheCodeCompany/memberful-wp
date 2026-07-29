@@ -86,10 +86,6 @@ function memberful_wp_wrap_teaser_content( $content ) {
  * @return string Formatted teaser content.
  */
 function memberful_wp_format_divider_teaser_content( $content ) {
-  if ( '' === trim( (string) $content ) ) {
-    return $content;
-  }
-
   if ( ! get_option( 'memberful_use_global_snippets' ) ) {
     return $content;
   }

@@ -436,8 +436,8 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
       return $content;
     }
 
-    if ( preg_match( '/<div class=["\']memberful-global-marketing-content["\']>/', $content ) ) {
-      return preg_replace( '/<div class=["\']memberful-global-marketing-content["\']>/', $preview . '$0', $content, 1 );
+    if ( preg_match( '/<div class=["\']memberful-global-marketing-content["\']>/', $content, $matches, PREG_OFFSET_CAPTURE ) ) {
+      return substr_replace( $content, $preview, $matches[0][1], 0 );
     }
 
     return $preview . $content;

@@ -135,10 +135,20 @@ function memberful_wp_protect_content( $content ) {
       $protected_content = apply_filters( 'memberful_wp_protect_content', $memberful_marketing_content );
     }
 
-    // Restore Beaver Builder so posts rendered later in this request
-    // (archive loops, widgets, secondary queries) still get their layouts.
+    // Restore Beaver Builder after this `the_content` run finishes, so a
+    // same-run callback at an earlier priority (e.g. Sensei's filter at -10)
+    // cannot let Beaver Builder replace paywall output with the protected layout.
     if ( FALSE !== $beaver_builder_priority ) {
-      add_filter( 'the_content', 'FLBuilder::render_content', $beaver_builder_priority );
+      if ( doing_filter( 'the_content' ) ) {
+        $restore_beaver_builder = function( $content ) use ( $beaver_builder_priority, &$restore_beaver_builder ) {
+          remove_filter( 'the_content', $restore_beaver_builder, 9999 );
+          add_filter( 'the_content', 'FLBuilder::render_content', $beaver_builder_priority );
+          return $content;
+        };
+        add_filter( 'the_content', $restore_beaver_builder, 9999 );
+      } else {
+        add_filter( 'the_content', 'FLBuilder::render_content', $beaver_builder_priority );
+      }
     }
 
     return $protected_content;

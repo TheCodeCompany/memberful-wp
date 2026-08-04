@@ -205,14 +205,28 @@ class Memberful_Paywall_Renderer {
   }
 
   /**
-   * Primary subscribe CTA, or empty when there is no usable destination.
+   * Primary CTA, or empty when there is no usable destination.
+   *
+   * Renders the free-registration upsell instead of the subscribe button when the visitor was blocked by the meter
+   * and creating a free account would grant additional views. Falls back to the subscribe button when the free
+   * destination resolves to nothing usable.
    *
    * @param array $config Sanitized config.
    *
    * @return string
    */
   private static function primary_cta( array $config, bool $interactive ): string {
-    $url = self::subscribe_url( $config );
+    $label = $config['button_label'];
+    $url   = self::subscribe_url( $config );
+
+    if ( self::should_show_free_registration_cta() ) {
+      $free_url = self::free_registration_url( $config );
+
+      if ( '' !== $free_url ) {
+        $label = $config['free_button_label'];
+        $url   = $free_url;
+      }
+    }
 
     if ( '' === $url ) {
       return '';
@@ -221,15 +235,66 @@ class Memberful_Paywall_Renderer {
     if ( ! $interactive ) {
       return sprintf(
         '<span class="memberful-paywall__button memberful-paywall__button--primary" aria-disabled="true">%s</span>',
-        esc_html( $config['button_label'] )
+        esc_html( $label )
       );
     }
 
     return sprintf(
       '<a class="memberful-paywall__button memberful-paywall__button--primary" href="%s">%s</a>',
       esc_url( $url ),
-      esc_html( $config['button_label'] )
+      esc_html( $label )
     );
+  }
+
+  /**
+   * Whether the paywall should upsell a free registration instead of a paid subscription.
+   *
+   * True only when a logged-out visitor was blocked by the meter on the post under view and free members get a
+   * higher metered limit - anonymous views merge into the account on login, so an equal or lower registered limit
+   * would grant no additional views.
+   *
+   * @return bool
+   */
+  private static function should_show_free_registration_cta(): bool {
+    if ( is_user_logged_in() ) {
+      return false;
+    }
+
+    if ( ! class_exists( 'Memberful_Metering_Access' ) || ! class_exists( 'Memberful_Metering_Config' ) ) {
+      return false;
+    }
+
+    $post_id = (int) get_queried_object_id();
+
+    if ( ! $post_id || Memberful_Metering_Access::DECISION_TRIP_METER !== Memberful_Metering_Access::get_current_decision( $post_id ) ) {
+      return false;
+    }
+
+    $metering = Memberful_Metering_Config::get();
+
+    if ( empty( $metering['enabled'] ) ) {
+      return false;
+    }
+
+    return (int) $metering['registered_limit'] > (int) $metering['anonymous_limit'];
+  }
+
+  /**
+   * Resolve the free-registration URL, falling back to the Memberful registration page when it resolves to an
+   * absolute URL.
+   *
+   * @param array $config Sanitized config.
+   *
+   * @return string
+   */
+  private static function free_registration_url( array $config ): string {
+    if ( ! empty( $config['free_button_url'] ) ) {
+      return $config['free_button_url'];
+    }
+
+    $registration_url = memberful_registration_page_url();
+
+    return wp_parse_url( $registration_url, PHP_URL_HOST ) ? $registration_url : '';
   }
 
   /**

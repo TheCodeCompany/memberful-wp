@@ -16,10 +16,24 @@ if ( Memberful_Metering_Access::DECISION_ALLOW_SAMPLE !== Memberful_Metering_Acc
 	return;
 }
 
-$template = isset( $attributes['template'] ) ? (string) $attributes['template'] : '';
-$message  = str_replace(
+$remaining = Memberful_Metering_Access::get_current_remaining( $post_id );
+
+/**
+ * Remaining counts views left *after* this article, so on the last free article it is zero.
+ * Swap in the dedicated message there instead of rendering "0 free articles left", and use
+ * the singular wording when exactly one view remains.
+ */
+if ( 0 === $remaining ) {
+	$template = isset( $attributes['lastArticleTemplate'] ) ? (string) $attributes['lastArticleTemplate'] : '';
+} elseif ( 1 === $remaining ) {
+	$template = isset( $attributes['singularTemplate'] ) ? (string) $attributes['singularTemplate'] : '';
+} else {
+	$template = isset( $attributes['template'] ) ? (string) $attributes['template'] : '';
+}
+
+$message = str_replace(
 	'{count}',
-	number_format_i18n( Memberful_Metering_Access::get_current_remaining( $post_id ) ),
+	number_format_i18n( $remaining ),
 	$template
 );
 

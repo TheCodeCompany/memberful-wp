@@ -13,11 +13,17 @@ import { __ } from '@wordpress/i18n';
  */
 import {
 	BlockControls,
+	InspectorControls,
 	RichText,
 	store as blockEditorStore,
 	useBlockProps,
 } from '@wordpress/block-editor';
-import { ToolbarButton, ToolbarGroup } from '@wordpress/components';
+import {
+	PanelBody,
+	TextControl,
+	ToolbarButton,
+	ToolbarGroup,
+} from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { create, insert, toHTMLString } from '@wordpress/rich-text';
 
@@ -32,7 +38,7 @@ const COUNT_PLACEHOLDER = '{count}';
  * @return {Element} Element to render.
  */
 export default function Edit( { attributes, setAttributes, clientId } ) {
-	const { template } = attributes;
+	const { template, singularTemplate, lastArticleTemplate } = attributes;
 	const { selectionStart, selectionEnd } = useSelect(
 		( select ) => {
 			const { getSelectionStart, getSelectionEnd } =
@@ -87,6 +93,44 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 
 	return (
 		<>
+			<InspectorControls>
+				<PanelBody title={ __( 'Countdown messages', 'memberful' ) }>
+					<TextControl
+						__next40pxDefaultSize
+						__nextHasNoMarginBottom
+						label={ __( 'One article left message', 'memberful' ) }
+						help={ __(
+							'Shown when exactly one free article remains after this one. Leave empty to hide the block at that point.',
+							'memberful'
+						) }
+						value={ singularTemplate }
+						onChange={ ( value ) =>
+							setAttributes( { singularTemplate: value } )
+						}
+						placeholder={ __(
+							'You have {count} free article left.',
+							'memberful'
+						) }
+					/>
+					<TextControl
+						__next40pxDefaultSize
+						__nextHasNoMarginBottom
+						label={ __( 'Last article message', 'memberful' ) }
+						help={ __(
+							'Shown instead of the countdown when the visitor is reading their last free article. Leave empty to hide the block on the last article.',
+							'memberful'
+						) }
+						value={ lastArticleTemplate }
+						onChange={ ( value ) =>
+							setAttributes( { lastArticleTemplate: value } )
+						}
+						placeholder={ __(
+							'This is your last free article.',
+							'memberful'
+						) }
+					/>
+				</PanelBody>
+			</InspectorControls>
 			<BlockControls group="block">
 				<ToolbarGroup>
 					<ToolbarButton

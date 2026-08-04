@@ -104,8 +104,13 @@ function memberful_wp_protect_content( $content ) {
   }
 
   if ( ! memberful_can_user_access_post( wp_get_current_user()->ID, $post->ID ) ) {
-    // Disable Beaver Builder
-    remove_action( "the_content", "FLBuilder::render_content" );
+    // Disable Beaver Builder while the marketing content is built, so nested
+    // `the_content` calls can't render the protected layout into it.
+    $beaver_builder_priority = has_filter( 'the_content', 'FLBuilder::render_content' );
+
+    if ( FALSE !== $beaver_builder_priority ) {
+      remove_action( 'the_content', 'FLBuilder::render_content', $beaver_builder_priority );
+    }
 
     // Remove Elementor action hook
     if (get_queried_object_id() === $post->ID) {
@@ -122,13 +127,21 @@ function memberful_wp_protect_content( $content ) {
       $rendered_marketing_content = apply_filters( 'memberful_wp_protect_content', $memberful_marketing_content );
 
       if ( '' !== trim( (string) $rendered_marketing_content ) ) {
-        return $content_above_divider . $rendered_marketing_content;
+        $protected_content = $content_above_divider . $rendered_marketing_content;
+      } else {
+        $protected_content = $content_above_divider;
       }
-
-      return $content_above_divider;
+    } else {
+      $protected_content = apply_filters( 'memberful_wp_protect_content', $memberful_marketing_content );
     }
 
-    return apply_filters( 'memberful_wp_protect_content', $memberful_marketing_content );
+    // Restore Beaver Builder so posts rendered later in this request
+    // (archive loops, widgets, secondary queries) still get their layouts.
+    if ( FALSE !== $beaver_builder_priority ) {
+      add_filter( 'the_content', 'FLBuilder::render_content', $beaver_builder_priority );
+    }
+
+    return $protected_content;
   }
 
   if ( $content_split['has_divider'] ) {
@@ -145,7 +158,9 @@ add_filter( 'memberful_wp_protect_content','wpautop');
 add_filter( 'memberful_wp_protect_content','shortcode_unautop');
 add_filter( 'memberful_wp_protect_content','prepend_attachment');
 
-add_filter('memberful_wp_protect_content','do_blocks',15);
+// Match core ordering: blocks render before wpautop (10) and do_shortcode (11),
+// so shortcodes emitted by blocks in marketing content still execute.
+add_filter( 'memberful_wp_protect_content', 'do_blocks', 9 );
 add_filter( 'memberful_wp_protect_content', 'do_shortcode', 11 );
 
 if ( get_option( 'memberful_use_global_marketing' ) ) {

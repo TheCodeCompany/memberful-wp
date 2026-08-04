@@ -116,6 +116,11 @@ Glad you asked! We manage development of the plugin over at the [Memberful WP Gi
 
 * Add the `memberful_subscriptions_link` shortcode for linking to the subscriptions page
 * Improve the debug tool
+* Fix Beaver Builder layouts not rendering for other posts after a protected post in the same request
+* Fix duplicate content-protection filter registered when building the global marketing teaser
+* Fix shortcodes emitted by blocks in marketing content never executing (run blocks before shortcodes, matching core)
+* Fix empty teaser wrapper and teaser CSS being output when a protected post has no teaser content
+* Fix Sensei integration failing to unhook content protection due to a missing filter priority
 
 = 1.80.0 =
 

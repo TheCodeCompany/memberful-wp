@@ -114,6 +114,7 @@ Glad you asked! We manage development of the plugin over at the [Memberful WP Gi
 
 = unreleased =
 
+* Add Memberful visibility settings to the Advanced tab of Beaver Builder rows, columns, and modules, matching the block editor visibility controls
 * Add the `memberful_subscriptions_link` shortcode for linking to the subscriptions page
 * Improve the debug tool
 * Fix Beaver Builder layouts not rendering for other posts after a protected post in the same request

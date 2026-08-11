@@ -5,6 +5,7 @@
 .memberful-paywall {
 	--memberful-border: #e5e5e5;
 	--memberful-brand: var(--wp--preset--color--primary, var(--wp--preset--color--accent, var(--wp-admin-theme-color, #2271b1)));
+	--memberful-brand-text: #fff;
 	--memberful-radius: 0;
 	--memberful-surface: #fff;
 	--memberful-text: #1a1a1a;
@@ -99,7 +100,7 @@
 .memberful-paywall__button--primary {
 	background: var(--memberful-brand);
 	border-color: var(--memberful-brand);
-	color: #fff;
+	color: var(--memberful-brand-text);
 }
 
 .memberful-paywall__button--primary:hover,
@@ -124,7 +125,7 @@
 	align-items: center;
 	background: var(--memberful-brand);
 	border-radius: 50%;
-	color: #fff;
+	color: var(--memberful-brand-text);
 	display: inline-flex;
 	height: 40px;
 	justify-content: center;

@@ -41,9 +41,10 @@ class Memberful_Paywall_Config {
 	/**
 	 * Read the stored config merged over defaults.
 	 *
-	 * On sites with legacy custom HTML in memberful_global_marketing_content and no stored builder config yet, the
-	 * default mode swaps to custom_html so the existing content keeps rendering untouched. Once the user saves any
-	 * config, the stored value wins and this check short-circuits.
+	 * On sites that predate the builder, legacy custom HTML in memberful_global_marketing_content, or global
+	 * marketing enabled at all (even with empty content), and no stored builder config yet, the default mode swaps
+	 * to custom_html so the existing experience keeps rendering untouched. Once the user saves any config, the
+	 * stored value wins and this check short-circuits.
 	 *
 	 * @return array
 	 */
@@ -55,7 +56,7 @@ class Memberful_Paywall_Config {
 		}
 
 		$defaults = self::defaults();
-		if ( empty( $stored ) && self::has_legacy_content() ) {
+		if ( empty( $stored ) && ( self::has_legacy_content() || get_option( 'memberful_use_global_marketing' ) ) ) {
 			$defaults['mode'] = 'custom_html';
 		}
 

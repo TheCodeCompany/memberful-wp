@@ -112,6 +112,10 @@ Glad you asked! We manage development of the plugin over at the [Memberful WP Gi
 
 == Changelog ==
 
+= unreleased =
+
+* Add a visual paywall builder for creating branded paywalls without writing HTML
+
 = 1.81.0 =
 
 * Add the `memberful_subscriptions_link` shortcode for linking to the subscriptions page

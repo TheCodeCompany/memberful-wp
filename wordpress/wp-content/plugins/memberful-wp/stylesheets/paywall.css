@@ -5,6 +5,7 @@
 .memberful-paywall {
 	--memberful-border: #e5e5e5;
 	--memberful-brand: var(--wp--preset--color--primary, var(--wp--preset--color--accent, var(--wp-admin-theme-color, #2271b1)));
+	--memberful-button-text: #fff;
 	--memberful-radius: 0;
 	--memberful-surface: #fff;
 	--memberful-text: #1a1a1a;
@@ -31,6 +32,13 @@
 	max-width: 600px;
 	padding: var(--wp--preset--spacing--50, 2rem) var(--wp--preset--spacing--40, 1.5rem) var(--wp--preset--spacing--40, 1.5rem);
 	text-align: center;
+}
+
+.memberful-paywall__meter {
+	color: var(--memberful-muted);
+	font-size: var(--wp--preset--font-size--small, 0.875rem);
+	font-weight: 600;
+	margin: 0 0 0.75rem;
 }
 
 .memberful-paywall__heading {
@@ -99,7 +107,8 @@
 .memberful-paywall__button--primary {
 	background: var(--memberful-brand);
 	border-color: var(--memberful-brand);
-	color: #fff;
+	/* Force the label colour so theme link rules (e.g. `#content a`, `a:visited`) can't repaint it to an unreadable value. */
+	color: var(--memberful-button-text) !important;
 }
 
 .memberful-paywall__button--primary:hover,
@@ -124,7 +133,7 @@
 	align-items: center;
 	background: var(--memberful-brand);
 	border-radius: 50%;
-	color: #fff;
+	color: var(--memberful-button-text);
 	display: inline-flex;
 	height: 40px;
 	justify-content: center;

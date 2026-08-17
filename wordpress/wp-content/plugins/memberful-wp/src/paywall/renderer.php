@@ -145,11 +145,49 @@ class Memberful_Paywall_Renderer {
     $cta     = self::primary_cta( $config, $interactive );
     $actions = '' === $cta ? '' : '<div class="memberful-paywall__actions">' . $cta . '</div>';
 
-    return self::heading_block( $config )
+    return self::meter_block( $config )
+           . self::heading_block( $config )
            . self::subheading_block( $config )
            . self::features_block( $config )
            . $actions
            . self::sign_in_prompt( $config, $interactive );
+  }
+
+  /**
+   * Free-view counter eyebrow. Rendered only when enabled and the current view is metered — a listener on
+   * memberful_paywall_free_view_limit returns the applicable limit, and null (the default) hides it on non-metered
+   * paywalls (the same builder markup also fronts the hard paywall for members-only posts).
+   *
+   * @param array $config Sanitized config.
+   *
+   * @return string
+   */
+  private static function meter_block( array $config ): string {
+    if ( empty( $config['show_counter'] ) ) {
+      return '';
+    }
+
+    $template = (string) $config['counter_template'];
+    if ( '' === trim( $template ) ) {
+      return '';
+    }
+
+    /**
+     * Filter the free-view limit shown in the paywall counter. Return null (the default) to hide the counter when the
+     * current view is not metered; the metering module returns the applicable anonymous or registered limit.
+     *
+     * @param int|null $limit  Applicable free-view limit, or null when the current view is not metered.
+     * @param array    $config Sanitized paywall config.
+     */
+    $limit = apply_filters( 'memberful_paywall_free_view_limit', null, $config );
+    if ( null === $limit ) {
+      return '';
+    }
+
+    return sprintf(
+      '<p class="memberful-paywall__meter">%s</p>',
+      esc_html( str_replace( '{limit}', number_format_i18n( (int) $limit ), $template ) )
+    );
   }
 
   /**
@@ -249,9 +287,9 @@ class Memberful_Paywall_Renderer {
   /**
    * Whether the paywall should upsell a free registration instead of a paid subscription.
    *
-   * True only when a logged-out visitor was blocked by the meter on the post under view and free members get a
-   * higher metered limit - anonymous views merge into the account on login, so an equal or lower registered limit
-   * would grant no additional views.
+   * True only for an anonymous free-meter render where free members get a higher metered limit - anonymous views
+   * merge into the account on login, so an equal or lower registered limit would grant no additional views. The
+   * paywall ships hidden and only appears once the client meter trips, so this reaches exactly the blocked visitors.
    *
    * @return bool
    */
@@ -266,15 +304,11 @@ class Memberful_Paywall_Renderer {
 
     $post_id = (int) get_queried_object_id();
 
-    if ( ! $post_id || Memberful_Metering_Access::DECISION_TRIP_METER !== Memberful_Metering_Access::get_current_decision( $post_id ) ) {
+    if ( ! $post_id || Memberful_Metering_Access::RENDER_FREE_METER !== Memberful_Metering_Access::current_anon_mode( $post_id ) ) {
       return false;
     }
 
     $metering = Memberful_Metering_Config::get();
-
-    if ( empty( $metering['enabled'] ) ) {
-      return false;
-    }
 
     return (int) $metering['registered_limit'] > (int) $metering['anonymous_limit'];
   }
@@ -347,6 +381,8 @@ class Memberful_Paywall_Renderer {
     $brand_color = isset( $config['brand_color'] ) ? sanitize_hex_color( (string) $config['brand_color'] ) : '';
     if ( ! empty( $brand_color ) ) {
       $parts[] = '--memberful-brand:' . $brand_color;
+      // Keep the button/lock glyph legible on a configured accent (e.g. a light brand needs dark text).
+      $parts[] = '--memberful-button-text:' . Memberful_Paywall_Color::contrast_text_color( $brand_color );
     }
 
     $background_color = isset( $config['background_color'] ) ? sanitize_hex_color( (string) $config['background_color'] ) : '';

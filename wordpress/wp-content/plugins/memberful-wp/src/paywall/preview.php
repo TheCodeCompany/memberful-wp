@@ -45,7 +45,10 @@ class Memberful_Paywall_Preview {
 	 * @return string
 	 */
 	public static function document( array $config ): string {
+		// The builder preview has no live metered context, so seed a sample limit to show the free-view counter.
+		add_filter( 'memberful_paywall_free_view_limit', array( __CLASS__, 'sample_free_view_limit' ) );
 		$body = Memberful_Paywall_Renderer::render( $config, false );
+		remove_filter( 'memberful_paywall_free_view_limit', array( __CLASS__, 'sample_free_view_limit' ) );
 
 		$paywall_css = add_query_arg( 'ver', MEMBERFUL_VERSION, plugins_url( 'stylesheets/paywall.css', MEMBERFUL_PLUGIN_FILE ) );
 		$theme_css   = get_stylesheet_uri();
@@ -81,6 +84,19 @@ class Memberful_Paywall_Preview {
 			. '</head>'
 			. '<body>' . $teaser . $body . '</body>'
 			. '</html>';
+	}
+
+	/**
+	 * Sample free-view limit so the counter renders in the builder preview, which has no live metered context.
+	 *
+	 * @param int|null $limit Incoming limit (unused).
+	 *
+	 * @return int
+	 */
+	public static function sample_free_view_limit( ?int $limit ): int {
+		unset( $limit );
+
+		return (int) Memberful_Metering_Config::get()['anonymous_limit'];
 	}
 
 	/**

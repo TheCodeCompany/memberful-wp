@@ -76,6 +76,10 @@ function memberful_wp_wrap_teaser_content( $content ) {
    */
   $content = apply_filters( 'memberful_teaser_content', $content, $post );
 
+  if ( '' === trim( (string) $content ) ) {
+    return $content;
+  }
+
   return "<div class='memberful-global-teaser-content'>$content</div>";
 }
 
@@ -92,7 +96,7 @@ function memberful_wp_format_divider_teaser_content( $content ) {
 
   $wrapped_content = memberful_wp_wrap_teaser_content( $content );
 
-  if ( function_exists( 'memberful_get_teaser_css' ) && ! did_filter( 'memberful_teaser_css' ) ) {
+  if ( '' !== trim( (string) $wrapped_content ) && function_exists( 'memberful_get_teaser_css' ) && ! did_filter( 'memberful_teaser_css' ) ) {
     $wrapped_content .= apply_filters( 'memberful_teaser_css', memberful_get_teaser_css() );
   }
 

@@ -6,6 +6,7 @@
       <?php if ( isset( $wprm_recipe_cards_locked ) ) : ?>
         <div class="memberful-wprm-recipe-card-protection">
           <h4 style="font-size: 13px;"><?php _e( 'Recipe cards', 'memberful' ); ?></h4>
+          <input type="hidden" name="memberful_wprm_lock_recipe_cards_present" value="1" />
           <label>
             <input type="checkbox" name="memberful_wprm_lock_recipe_cards" value="1" <?php checked( $wprm_recipe_cards_locked ); ?> />
             <?php _e( 'Lock WP Recipe Maker recipe cards in this post', 'memberful' ); ?>

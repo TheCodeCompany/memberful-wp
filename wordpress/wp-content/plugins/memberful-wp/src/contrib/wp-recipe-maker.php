@@ -63,7 +63,7 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
     add_filter( 'wprm_recipes_on_page', array( $this, 'filter_recipes_on_page' ), 1000 );
     add_filter( 'wprm_recipe_metadata_cache_enabled', array( $this, 'filter_metadata_cache_enabled' ), 10, 2 );
     add_filter( 'wprm_recipe_metadata', array( $this, 'filter_recipe_metadata' ), 10, 2 );
-    add_filter( 'wprm_print_output', array( $this, 'filter_print_output' ), 2 );
+    add_filter( 'wprm_print_output', array( $this, 'filter_print_output' ), 1000 );
     add_action( 'init', array( $this, 'register_rest_hooks' ) );
     add_filter( 'memberful_teaser_content', array( $this, 'add_locked_recipe_preview_to_teaser' ), 20, 2 );
     add_filter( 'memberful_wp_protect_content', array( $this, 'add_locked_recipe_preview_to_protected_content' ), 20 );
@@ -126,7 +126,11 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
       return;
     }
 
-    $is_locked = filter_input( INPUT_POST, 'memberful_wprm_lock_recipe_cards' ) === '1';
+    if ( ! isset( $_POST['memberful_wprm_lock_recipe_cards_present'] ) ) {
+      return;
+    }
+
+    $is_locked = isset( $_POST['memberful_wprm_lock_recipe_cards'] ) && $_POST['memberful_wprm_lock_recipe_cards'] === '1';
 
     update_post_meta( $post_id, self::LOCK_RECIPE_CARDS_META_KEY, $is_locked ? '1' : '0' );
   }
@@ -134,27 +138,50 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
   /**
    * Filter a full WP Recipe Maker recipe shortcode.
    *
-   * @param string $output The shortcode output.
-   * @param mixed  $recipe The WP Recipe Maker recipe object.
-   * @return string The filtered shortcode output.
+   * @param string|mixed $output The shortcode output.
+   * @param mixed        $recipe The WP Recipe Maker recipe object.
+   * @return string|mixed The filtered shortcode output.
    */
-  public function filter_recipe_shortcode_output( string $output, $recipe ): string {
-    if ( ! $this->should_lock_recipe_for_current_user( $recipe ) ) {
+  public function filter_recipe_shortcode_output( $output, $recipe ) {
+    if ( ! is_string( $output ) || ! $this->should_lock_recipe_for_current_user( $recipe ) ) {
       return $output;
+    }
+
+    if ( $this->uses_legacy_recipe_templates() ) {
+      return '';
     }
 
     return $this->prune_recipe_card_output( $output );
   }
 
   /**
+   * Check whether WP Recipe Maker is rendering pre-4.0 legacy PHP templates.
+   *
+   * @return bool True when legacy templates are in use.
+   */
+  private function uses_legacy_recipe_templates(): bool {
+    if ( ! class_exists( 'WPRM_Settings' ) ) {
+      return false;
+    }
+
+    return 'legacy' === WPRM_Settings::get( 'recipe_template_mode' );
+  }
+
+  /**
    * Filter WP Recipe Maker snippet shortcode output.
    *
-   * @param string $output    The shortcode output.
-   * @param array  $atts      The shortcode attributes.
-   * @param int    $recipe_id The recipe ID.
-   * @return string The filtered shortcode output.
+   * @param string|mixed $output    The shortcode output.
+   * @param array|mixed  $atts      The shortcode attributes.
+   * @param int|mixed    $recipe_id The recipe ID.
+   * @return string|mixed The filtered shortcode output.
    */
-  public function filter_recipe_snippet_shortcode_output( string $output, array $atts, int $recipe_id ): string {
+  public function filter_recipe_snippet_shortcode_output( $output, $atts, $recipe_id ) {
+    if ( ! is_string( $output ) ) {
+      return $output;
+    }
+
+    $recipe_id = is_numeric( $recipe_id ) ? absint( $recipe_id ) : 0;
+
     if ( $this->should_lock_recipe_id_for_current_user( $recipe_id ) ) {
       return '';
     }
@@ -165,12 +192,12 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
   /**
    * Filter rendered WP Recipe Maker blocks.
    *
-   * @param string $output The rendered block output.
-   * @param mixed  $block  The parsed block data.
-   * @return string The filtered block output.
+   * @param string|mixed $output The rendered block output.
+   * @param mixed        $block  The parsed block data.
+   * @return string|mixed The filtered block output.
    */
-  public function filter_rendered_block( string $output, $block ): string {
-    if ( ! is_array( $block ) || empty( $block['blockName'] ) || 0 !== strpos( $block['blockName'], 'wp-recipe-maker/' ) ) {
+  public function filter_rendered_block( $output, $block ) {
+    if ( ! is_string( $output ) || ! is_array( $block ) || empty( $block['blockName'] ) || ! is_string( $block['blockName'] ) || 0 !== strpos( $block['blockName'], 'wp-recipe-maker/' ) ) {
       return $output;
     }
 
@@ -178,7 +205,9 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
       return $output;
     }
 
-    if ( $this->should_lock_recipe_id_for_current_user( empty( $block['attrs']['id'] ) ? 0 : $block['attrs']['id'] ) ) {
+    $recipe_id = empty( $block['attrs']['id'] ) || ! is_numeric( $block['attrs']['id'] ) ? 0 : absint( $block['attrs']['id'] );
+
+    if ( $this->should_lock_recipe_id_for_current_user( $recipe_id ) ) {
       return '';
     }
 
@@ -188,12 +217,16 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
   /**
    * Filter rendered WP Recipe Maker shortcode tags.
    *
-   * @param string $output The shortcode output.
-   * @param string $tag    The shortcode tag.
-   * @param array  $attr   The shortcode attributes.
-   * @return string The filtered shortcode output.
+   * @param string|mixed $output The shortcode output.
+   * @param string|mixed $tag    The shortcode tag.
+   * @param array|mixed  $attr   The shortcode attributes.
+   * @return string|mixed The filtered shortcode output.
    */
-  public function filter_shortcode_tag( string $output, string $tag, array $attr ): string {
+  public function filter_shortcode_tag( $output, $tag, $attr ) {
+    if ( ! is_string( $output ) || ! is_string( $tag ) ) {
+      return $output;
+    }
+
     if ( 0 !== strpos( $tag, 'wprm-' ) || ! $this->is_hidden_wprm_component_name( $tag ) ) {
       return $output;
     }
@@ -208,16 +241,16 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
   /**
    * Filter recipe IDs detected from a post.
    *
-   * @param array $recipe_ids The detected recipe IDs.
-   * @param int   $post_id    The post ID.
-   * @return array The filtered recipe IDs.
+   * @param array|mixed $recipe_ids The detected recipe IDs.
+   * @param int|mixed   $post_id    The post ID.
+   * @return array|mixed The filtered recipe IDs.
    */
-  public function filter_recipe_ids_from_post( array $recipe_ids, int $post_id ): array {
-    if ( $this->bypass_recipe_id_filters ) {
+  public function filter_recipe_ids_from_post( $recipe_ids, $post_id ) {
+    if ( ! is_array( $recipe_ids ) || $this->bypass_recipe_id_filters ) {
       return $recipe_ids;
     }
 
-    if ( $this->should_lock_recipe_for_current_user( false, $post_id ) ) {
+    if ( $this->should_lock_recipe_for_current_user( false, is_numeric( $post_id ) ? absint( $post_id ) : 0 ) ) {
       return array();
     }
 
@@ -227,11 +260,11 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
   /**
    * Filter recipe IDs detected from content.
    *
-   * @param array  $recipe_ids The detected recipe IDs.
-   * @return array The filtered recipe IDs.
+   * @param array|mixed $recipe_ids The detected recipe IDs.
+   * @return array|mixed The filtered recipe IDs.
    */
-  public function filter_recipe_ids_from_content( array $recipe_ids ): array {
-    if ( $this->bypass_recipe_id_filters ) {
+  public function filter_recipe_ids_from_content( $recipe_ids ) {
+    if ( ! is_array( $recipe_ids ) || $this->bypass_recipe_id_filters ) {
       return $recipe_ids;
     }
 
@@ -245,10 +278,14 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
   /**
    * Filter recipe IDs tracked on the current page.
    *
-   * @param array $recipe_ids The recipe IDs on the page.
-   * @return array The filtered recipe IDs.
+   * @param array|mixed $recipe_ids The recipe IDs on the page.
+   * @return array|mixed The filtered recipe IDs.
    */
-  public function filter_recipes_on_page( array $recipe_ids ): array {
+  public function filter_recipes_on_page( $recipe_ids ) {
+    if ( ! is_array( $recipe_ids ) ) {
+      return $recipe_ids;
+    }
+
     $filtered_recipe_ids = array();
 
     foreach ( $recipe_ids as $recipe_id ) {
@@ -270,8 +307,10 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
    * @return bool True when the recipe should be locked for the current user.
    */
   private function should_lock_recipe_id_outside_loop( int $recipe_id ): bool {
-    if ( is_singular() ) {
-      return $this->should_lock_recipe_id_for_current_user( $recipe_id, get_queried_object_id() );
+    $queried_post_id = $this->queried_non_recipe_post_id();
+
+    if ( $queried_post_id ) {
+      return $this->should_lock_recipe_id_for_current_user( $recipe_id, $queried_post_id );
     }
 
     $parent_post_id = $this->recipe_parent_post_id( $this->recipe_for_id( absint( $recipe_id ) ) );
@@ -289,11 +328,11 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
    * The wprm_recipe_metadata filter only runs on cache misses, so caching must stay off for protected recipes or
    * filter_recipe_metadata gets skipped.
    *
-   * @param bool  $enabled Whether metadata caching is enabled.
-   * @param mixed $recipe  The WP Recipe Maker recipe object.
-   * @return bool Whether metadata caching should remain enabled.
+   * @param bool|mixed $enabled Whether metadata caching is enabled.
+   * @param mixed      $recipe  The WP Recipe Maker recipe object.
+   * @return bool|mixed Whether metadata caching should remain enabled.
    */
-  public function filter_metadata_cache_enabled( bool $enabled, $recipe ): bool {
+  public function filter_metadata_cache_enabled( $enabled, $recipe ) {
     if ( $this->recipe_has_memberful_protection( $recipe ) ) {
       return false;
     }
@@ -304,12 +343,12 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
   /**
    * Filter recipe metadata for locked recipes.
    *
-   * @param array $metadata The recipe metadata.
-   * @param mixed $recipe   The WP Recipe Maker recipe object.
-   * @return array The filtered recipe metadata.
+   * @param array|mixed $metadata The recipe metadata.
+   * @param mixed       $recipe   The WP Recipe Maker recipe object.
+   * @return array|mixed The filtered recipe metadata.
    */
-  public function filter_recipe_metadata( array $metadata, $recipe ): array {
-    if ( $this->should_lock_recipe_for_current_user( $recipe ) ) {
+  public function filter_recipe_metadata( $metadata, $recipe ) {
+    if ( is_array( $metadata ) && $this->should_lock_recipe_for_current_user( $recipe ) ) {
       return array();
     }
 
@@ -353,11 +392,15 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
    * WPRM force-enables show_in_rest for recipes, so anonymous requests can
    * read full recipe data and the fallback content unless removed here.
    *
-   * @param WP_REST_Response $response The response object.
-   * @param WP_Post          $post     The recipe post.
-   * @return WP_REST_Response The filtered response.
+   * @param WP_REST_Response|mixed $response The response object.
+   * @param WP_Post|mixed          $post     The recipe post.
+   * @return WP_REST_Response|mixed The filtered response.
    */
-  public function filter_rest_prepare_recipe( WP_REST_Response $response, WP_Post $post ): WP_REST_Response {
+  public function filter_rest_prepare_recipe( $response, $post ) {
+    if ( ! $response instanceof WP_REST_Response || ! $post instanceof WP_Post ) {
+      return $response;
+    }
+
     if ( ! $this->should_lock_recipe_id_for_current_user( $post->ID ) ) {
       return $response;
     }
@@ -575,11 +618,29 @@ class Memberful_Wp_Integration_WP_Recipe_Maker {
       return $post->ID;
     }
 
-    if ( is_singular() ) {
-      return get_queried_object_id();
+    return $this->queried_non_recipe_post_id();
+  }
+
+  /**
+   * Get the queried singular post ID unless it is a WPRM recipe.
+   *
+   * Recipes viewed at their own public CPT URL must resolve locking against the recipe's parent post, where the lock
+   * meta lives.
+   *
+   * @return int The queried post ID, or 0.
+   */
+  private function queried_non_recipe_post_id(): int {
+    if ( ! is_singular() ) {
+      return 0;
     }
 
-    return 0;
+    $post_id = absint( get_queried_object_id() );
+
+    if ( ! $post_id || ( defined( 'WPRM_POST_TYPE' ) && WPRM_POST_TYPE === get_post_type( $post_id ) ) ) {
+      return 0;
+    }
+
+    return $post_id;
   }
 
   /**

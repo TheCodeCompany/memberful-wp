@@ -113,11 +113,14 @@ function memberful_wp_menu() {
 
 function memberful_wp_admin_enqueue_scripts() {
   $screen = get_current_screen();
+  $admin_css_path = MEMBERFUL_DIR . '/stylesheets/admin.css';
 
   if ( strpos( 'memberful', $screen->id ) !== null ) {
     wp_enqueue_style(
       'memberful-admin',
-      plugins_url( 'stylesheets/admin.css' , dirname(__FILE__) )
+      plugins_url( 'stylesheets/admin.css' , dirname(__FILE__) ),
+      array(),
+      file_exists( $admin_css_path ) ? filemtime( $admin_css_path ) : MEMBERFUL_VERSION
     );
     wp_enqueue_script(
       'memberful-admin',
@@ -131,20 +134,21 @@ function memberful_wp_admin_enqueue_scripts() {
     'memberful_options' === filter_input( INPUT_GET, 'page' )
     && 'global_marketing' === filter_input( INPUT_GET, 'subpage' )
   ) {
-    wp_enqueue_style( 'wp-color-picker' );
+    $paywall_css_path = MEMBERFUL_DIR . '/stylesheets/paywall.css';
+    $paywall_builder_path = MEMBERFUL_DIR . '/js/build/paywall-builder.js';
 
     wp_enqueue_style(
       'memberful-paywall',
       MEMBERFUL_URL . '/stylesheets/paywall.css',
       array(),
-      MEMBERFUL_VERSION
+      file_exists( $paywall_css_path ) ? filemtime( $paywall_css_path ) : MEMBERFUL_VERSION
     );
 
     wp_enqueue_script(
       'memberful-paywall-builder',
       MEMBERFUL_URL . '/js/build/paywall-builder.js',
-      array( 'jquery', 'wp-color-picker' ),
-      MEMBERFUL_VERSION,
+      array('jquery'),
+      file_exists( $paywall_builder_path ) ? filemtime( $paywall_builder_path ) : MEMBERFUL_VERSION,
       true
     );
 
@@ -327,6 +331,8 @@ function memberful_wp_options() {
       update_option( 'memberful_filter_account_menu_items', isset( $_POST['memberful_filter_account_menu_items'] ));
       update_option( 'memberful_auto_sync_display_names', isset( $_POST['memberful_auto_sync_display_names'] ) );
       update_option( 'memberful_show_protected_content_in_search', isset( $_POST['memberful_show_protected_content_in_search'] ) );
+      update_option( 'memberful_expiry_banner_enabled', isset( $_POST['memberful_expiry_banner_enabled'] ) );
+      update_option( 'memberful_expiry_banner_days', min( 90, max( 1, (int) ( $_POST['memberful_expiry_banner_days'] ?? 7 ) ) ) );
 
       return wp_redirect( admin_url( 'options-general.php?page=memberful_options' ) );
     }
@@ -368,6 +374,8 @@ function memberful_wp_options() {
   $filter_account_menu_items = get_option( 'memberful_filter_account_menu_items' );
   $auto_sync_display_names = get_option( 'memberful_auto_sync_display_names' );
   $show_protected_content_in_search = get_option( 'memberful_show_protected_content_in_search' );
+  $expiry_banner_enabled = get_option( 'memberful_expiry_banner_enabled' );
+  $expiry_banner_days = get_option( 'memberful_expiry_banner_days', 7 );
 
   memberful_wp_render (
     'options',
@@ -380,7 +388,9 @@ function memberful_wp_options() {
       'block_dashboard_access' => $block_dashboard_access,
       'filter_account_menu_items' => $filter_account_menu_items,
       'auto_sync_display_names' => $auto_sync_display_names,
-      'show_protected_content_in_search' => $show_protected_content_in_search
+      'show_protected_content_in_search' => $show_protected_content_in_search,
+      'expiry_banner_enabled' => $expiry_banner_enabled,
+      'expiry_banner_days' => $expiry_banner_days
     )
   );
 }

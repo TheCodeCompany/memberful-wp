@@ -6,7 +6,13 @@ const vm = require('node:vm');
 
 const runtime = fs.readFileSync(path.join(__dirname, 'src/metering.js'), 'utf8');
 
-const runRuntime = async ({ mode, stored = null, response = { success: true, data: {} } }) => {
+const makeCountdownNode = (attributes) => ({
+  getAttribute: (name) => (name in attributes ? attributes[name] : null),
+  textContent: '',
+  hidden: true,
+});
+
+const runRuntime = async ({ mode, stored = null, response = { success: true, data: {} }, countdownNode = null }) => {
   const requests = [];
   const values = new Map();
 
@@ -20,7 +26,7 @@ const runRuntime = async ({ mode, stored = null, response = { success: true, dat
   };
   const document = {
     documentElement: { classList: { add: () => {} } },
-    querySelector: () => null,
+    querySelector: (selector) => (selector === '[data-memberful-countdown]' ? countdownNode : null),
   };
   const window = {
     URLSearchParams,
@@ -105,6 +111,58 @@ test('sends all local views with a protected sample request', async () => {
   const body = new URLSearchParams(result.requests[0].options.body);
   assert.equal(body.get('op'), 'sample');
   assert.deepEqual(body.getAll('public_post_ids[]'), ['10']);
+});
+
+const countdownTemplates = {
+  'data-memberful-template': 'You have {count} free articles left.',
+  'data-memberful-template-singular': 'You have {count} free article left.',
+  'data-memberful-template-last': 'This is your last free article.',
+};
+
+test('renders the plural countdown template while several free views remain', async () => {
+  const node = makeCountdownNode(countdownTemplates);
+  await runRuntime({ mode: 'free_meter', countdownNode: node });
+
+  assert.equal(node.textContent, 'You have 2 free articles left.');
+  assert.equal(node.hidden, false);
+});
+
+test('renders the singular countdown template when one free view remains', async () => {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const node = makeCountdownNode(countdownTemplates);
+  await runRuntime({
+    mode: 'free_meter',
+    countdownNode: node,
+    stored: { v: 2, pending: {}, views: { 10: timestamp } },
+  });
+
+  assert.equal(node.textContent, 'You have 1 free article left.');
+  assert.equal(node.hidden, false);
+});
+
+test('renders the last-article countdown template when no free views remain', async () => {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const node = makeCountdownNode(countdownTemplates);
+  await runRuntime({
+    mode: 'free_meter',
+    countdownNode: node,
+    stored: { v: 2, pending: {}, views: { 10: timestamp, 11: timestamp } },
+  });
+
+  assert.equal(node.textContent, 'This is your last free article.');
+  assert.equal(node.hidden, false);
+});
+
+test('leaves the countdown hidden when the selected template is empty', async () => {
+  const node = makeCountdownNode({ 'data-memberful-template': 'You have {count} free articles left.' });
+  const timestamp = Math.floor(Date.now() / 1000);
+  await runRuntime({
+    mode: 'free_meter',
+    countdownNode: node,
+    stored: { v: 2, pending: {}, views: { 10: timestamp } },
+  });
+
+  assert.equal(node.hidden, true);
 });
 
 test('acknowledges pending public views even when a protected sample is denied', async () => {

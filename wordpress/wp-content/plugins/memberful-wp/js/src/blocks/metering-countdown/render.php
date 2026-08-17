@@ -10,20 +10,26 @@
  * @see https://github.com/WordPress/gutenberg/blob/trunk/docs/reference-guides/block-api/block-metadata.md#render
  */
 
-$post_id  = get_queried_object_id();
-$template = isset( $attributes['template'] ) ? (string) $attributes['template'] : '';
+$post_id       = get_queried_object_id();
+$template      = isset( $attributes['template'] ) ? (string) $attributes['template'] : '';
+$singular      = isset( $attributes['singularTemplate'] ) ? (string) $attributes['singularTemplate'] : '';
+$last_template = isset( $attributes['lastArticleTemplate'] ) ? (string) $attributes['lastArticleTemplate'] : '';
 
-if ( '' === trim( $template ) ) {
+if ( '' === trim( $template ) && '' === trim( $singular ) && '' === trim( $last_template ) ) {
 	return;
 }
 
+// Anonymous / cached path: emit a hidden placeholder with every template so the client-side
+// meter can pick the right message once it knows the remaining count.
 if ( Memberful_Metering_Access::RENDER_NONE !== Memberful_Metering_Access::current_anon_mode( $post_id ) ) {
 	printf(
 		'<p %s hidden>%s</p>',
 		get_block_wrapper_attributes(
 			array(
-				'data-memberful-countdown' => '1',
-				'data-memberful-template'  => $template,
+				'data-memberful-countdown'         => '1',
+				'data-memberful-template'          => $template,
+				'data-memberful-template-singular' => $singular,
+				'data-memberful-template-last'     => $last_template,
 			)
 		),
 		esc_html( str_replace( '{count}', '', $template ) )
@@ -36,9 +42,22 @@ if ( Memberful_Metering_Access::DECISION_ALLOW_SAMPLE !== Memberful_Metering_Acc
 	return;
 }
 
+$remaining = Memberful_Metering_Access::get_current_remaining( $post_id );
+
+/**
+ * Remaining counts views left *after* this article, so on the last free article it is zero.
+ * Swap in the dedicated message there instead of rendering "0 free articles left", and use
+ * the singular wording when exactly one view remains.
+ */
+if ( 0 === $remaining ) {
+	$template = $last_template;
+} elseif ( 1 === $remaining ) {
+	$template = $singular;
+}
+
 $message = str_replace(
 	'{count}',
-	number_format_i18n( Memberful_Metering_Access::get_current_remaining( $post_id ) ),
+	number_format_i18n( $remaining ),
 	$template
 );
 

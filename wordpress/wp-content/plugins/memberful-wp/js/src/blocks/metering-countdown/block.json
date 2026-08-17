@@ -17,6 +17,14 @@
     "template": {
       "type": "string",
       "default": "You have {count} free articles left."
+    },
+    "singularTemplate": {
+      "type": "string",
+      "default": "You have {count} free article left."
+    },
+    "lastArticleTemplate": {
+      "type": "string",
+      "default": "This is your last free article."
     }
   },
   "supports": {

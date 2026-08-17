@@ -148,8 +148,19 @@
     if (!node) {
       return;
     }
-    const template = node.getAttribute('data-memberful-template') || '';
-    node.textContent = template.replace(/\{count\}/g, String(Math.max(0, remaining)));
+    const count = Math.max(0, remaining);
+    let template;
+    if (count === 0) {
+      template = node.getAttribute('data-memberful-template-last') || '';
+    } else if (count === 1) {
+      template = node.getAttribute('data-memberful-template-singular') || '';
+    } else {
+      template = node.getAttribute('data-memberful-template') || '';
+    }
+    if (template.trim() === '') {
+      return;
+    }
+    node.textContent = template.replace(/\{count\}/g, String(count));
     node.hidden = false;
   };
 

@@ -3,7 +3,6 @@ jQuery(function ($) {
   const $modeInputs  = $('input[name="memberful_paywall[mode]"]');
   const $panels      = $('.memberful-paywall-builder__panel');
   const $preview     = $('#memberful-paywall-preview');
-  const $colorInputs = $('.memberful-paywall-builder__color');
 
   const preview = window.memberfulPaywallPreview || {};
   const DEBOUNCE_MS = 250;
@@ -11,30 +10,34 @@ jQuery(function ($) {
   let debounceTimer = null;
   let requestSeq = 0;
 
-  $colorInputs.each(function () {
-    const $input = $(this);
-    let palettes = true;
-    const palettesAttr = $input.attr('data-palettes');
-    if (palettesAttr) {
-      try {
-        const parsed = JSON.parse(palettesAttr);
-        if (Array.isArray(parsed) && parsed.length) {
-          palettes = parsed;
-        }
-      } catch (e) {
-        // Fall back to wpColorPicker's default palette.
-      }
+  function setColorFieldValue($field, color) {
+    const normalized = color ? color.toLowerCase() : '';
+    const $presetSwatches = $field.find('.memberful-paywall-builder__swatch[data-color]');
+    const $customSwatch = $field.find('.memberful-paywall-builder__swatch--custom');
+    let presetSelected = false;
+
+    $field.find('.memberful-paywall-builder__color-input').val(normalized);
+
+    $presetSwatches.each(function () {
+      const $swatch = $(this);
+      const isSelected = normalized !== '' && ($swatch.attr('data-color') || '').toLowerCase() === normalized;
+      $swatch.toggleClass('is-selected', isSelected).attr('aria-pressed', isSelected ? 'true' : 'false');
+      presetSelected = presetSelected || isSelected;
+    });
+
+    $customSwatch.toggleClass('is-selected', normalized !== '' && !presetSelected);
+    if (normalized !== '' && !presetSelected) {
+      $customSwatch.css('--memberful-custom-swatch-color', normalized);
+    } else {
+      $customSwatch.css('--memberful-custom-swatch-color', '');
     }
 
-    $input.wpColorPicker({
-      palettes: palettes,
-      change: function () {
-        setTimeout(scheduleRefresh, 0);
-      },
-      clear: function () {
-        setTimeout(scheduleRefresh, 0);
-      },
-    });
+    $field.find('.memberful-paywall-builder__color-reset').prop('disabled', normalized === '');
+  }
+
+  $('[data-color-field]').each(function () {
+    const $field = $(this);
+    setColorFieldValue($field, $field.find('.memberful-paywall-builder__color-input').val() || '');
   });
 
   function applyMode(mode) {
@@ -68,6 +71,8 @@ jQuery(function ($) {
       }).get(),
       button_label:     $('#memberful-paywall-button-label').val() || '',
       subscribe_url:    $('#memberful-paywall-subscribe-url').val() || '',
+      free_button_label: $('#memberful-paywall-free-button-label').val() || '',
+      free_button_url:   $('#memberful-paywall-free-button-url').val() || '',
       sign_in_url:      $('#memberful-paywall-signin-url').val() || '',
       brand_color:      $('#memberful-paywall-brand-color').val() || '',
       background_color: $('#memberful-paywall-background-color').val() || '',
@@ -135,6 +140,25 @@ jQuery(function ($) {
 
   $form.on('input', 'input[type="text"], input[type="url"], textarea', scheduleRefresh);
   $form.on('change', 'input[type="radio"], input[type="checkbox"], select', refreshPreview);
+
+  $form.on('click', '.memberful-paywall-builder__swatch[data-color]', function (e) {
+    e.preventDefault();
+
+    setColorFieldValue($(this).closest('[data-color-field]'), $(this).attr('data-color') || '');
+    refreshPreview();
+  });
+
+  $form.on('input change', '.memberful-paywall-builder__swatch--custom input[type="color"]', function () {
+    setColorFieldValue($(this).closest('[data-color-field]'), this.value || '');
+    scheduleRefresh();
+  });
+
+  $form.on('click', '.memberful-paywall-builder__color-reset', function (e) {
+    e.preventDefault();
+
+    setColorFieldValue($(this).closest('[data-color-field]'), '');
+    refreshPreview();
+  });
 
   $form.on('click', '.memberful-paywall-builder__benefit-add', function (e) {
     e.preventDefault();

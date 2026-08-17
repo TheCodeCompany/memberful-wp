@@ -33,7 +33,7 @@ class Memberful_Paywall_Sanitizer {
 			}
 		}
 
-		foreach ( array( 'heading', 'subheading', 'button_label', 'counter_template' ) as $key ) {
+		foreach ( array( 'heading', 'subheading', 'button_label', 'free_button_label', 'counter_template' ) as $key ) {
 			if ( isset( $input[ $key ] ) ) {
 				$clean[ $key ] = sanitize_text_field( (string) $input[ $key ] );
 			}
@@ -55,7 +55,7 @@ class Memberful_Paywall_Sanitizer {
 			$clean['features'] = $features;
 		}
 
-		foreach ( array( 'subscribe_url', 'sign_in_url' ) as $key ) {
+		foreach ( array( 'subscribe_url', 'sign_in_url', 'free_button_url' ) as $key ) {
 			if ( isset( $input[ $key ] ) ) {
 				$clean[ $key ] = esc_url_raw( (string) $input[ $key ] );
 			}

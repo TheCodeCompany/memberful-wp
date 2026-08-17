@@ -4,7 +4,7 @@ Tags: membership, subscriptions, paywall, stripe, recurring payments, memberful,
 Requires at least: 6.3
 Tested up to: 6.9.1
 Requires PHP: 7.4
-Stable tag: 1.78.0
+Stable tag: 1.80.0
 License: GPLv2 or later
 
 Sell memberships and restrict access to content with WordPress and Memberful.
@@ -142,6 +142,19 @@ Blocks:
 * Meter anonymous public and protected views against a single free allowance
 * Show a default paywall message when a metered post has no marketing content configured
 * Add an optional free-view counter to the paywall design
+
+= 1.80.0 =
+
+* Add an optional banner notifying members of expiring or expired memberships
+* Disable Raptive video players on mobile devices for members
+
+= 1.79.0 =
+
+* Add Paywall Divider block to mark where protected content starts
+
+= 1.78.1 =
+
+* Fix Raptive Ads suppression not disabling video ads
 
 = 1.78.0 =
 

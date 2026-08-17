@@ -26,25 +26,7 @@ class Memberful_Paywall_Renderer {
   public static function register(): void {
     add_filter( 'memberful_wp_protect_content', array( __CLASS__, 'protect_content' ) );
     add_action( 'wp_footer', array( __CLASS__, 'maybe_print_styles' ) );
-    add_filter( 'memberful_global_teaser_class', array( __CLASS__, 'filter_teaser_class' ) );
     add_filter( 'memberful_teaser_css', array( __CLASS__, 'filter_teaser_css' ) );
-  }
-
-  /**
-   * Append a layout modifier to the teaser wrapper class when the builder paywall is active.
-   *
-   * @param string $classes Default teaser wrapper class list.
-   *
-   * @return string
-   */
-  public static function filter_teaser_class( string $classes ): string {
-    if ( ! self::is_builder_mode() ) {
-      return $classes;
-    }
-
-    $config = Memberful_Paywall_Config::get();
-
-    return $classes . ' memberful-global-teaser-content--memberful-' . $config['layout'];
   }
 
   /**
@@ -82,6 +64,10 @@ class Memberful_Paywall_Renderer {
    * Render paywall styles.
    */
   public static function maybe_print_styles(): void {
+    if ( ! file_exists( MEMBERFUL_DIR . '/stylesheets/paywall.css' ) ) {
+      return;
+    }
+
     /**
      * Filter whether the bundled paywall stylesheet should be enqueued.
      *
@@ -95,18 +81,19 @@ class Memberful_Paywall_Renderer {
       'memberful-paywall',
       MEMBERFUL_URL . '/stylesheets/paywall.css',
       array(),
-      MEMBERFUL_VERSION
+      filemtime( MEMBERFUL_DIR . '/stylesheets/paywall.css' )
     );
   }
 
   /**
    * Render a paywall config to HTML.
    *
-   * @param array $config Config shape from Memberful_Paywall_Config::get().
+   * @param array $config      Config shape from Memberful_Paywall_Config::get().
+   * @param bool  $interactive Whether links should navigate when clicked.
    *
    * @return string
    */
-  public static function render( array $config ): string {
+  public static function render( array $config, bool $interactive = true ): string {
     $config = wp_parse_args( $config, Memberful_Paywall_Config::defaults() );
 
     $layout = in_array( $config['layout'], Memberful_Paywall_Config::LAYOUTS, true ) ? $config['layout'] : 'card';
@@ -116,7 +103,7 @@ class Memberful_Paywall_Renderer {
       '<div class="memberful-paywall memberful-paywall--%1$s" style="%2$s">%3$s</div>',
       esc_attr( $layout ),
       esc_attr( self::wrapper_style( $config ) ),
-      self::$method( $config )
+      self::$method( $config, $interactive )
     );
   }
 
@@ -127,8 +114,8 @@ class Memberful_Paywall_Renderer {
    *
    * @return string
    */
-  private static function render_inline( array $config ): string {
-    return '<div class="memberful-paywall__inner">' . self::render_inner( $config ) . '</div>';
+  private static function render_inline( array $config, bool $interactive ): string {
+    return '<div class="memberful-paywall__inner">' . self::render_inner( $config, $interactive ) . '</div>';
   }
 
   /**
@@ -138,11 +125,11 @@ class Memberful_Paywall_Renderer {
    *
    * @return string
    */
-  private static function render_card( array $config ): string {
+  private static function render_card( array $config, bool $interactive ): string {
     return '<div class="memberful-paywall__inner">'
            . '<div class="memberful-paywall__card">'
            . self::lock_badge()
-           . self::render_inner( $config )
+           . self::render_inner( $config, $interactive )
            . '</div>'
            . '</div>';
   }
@@ -154,13 +141,16 @@ class Memberful_Paywall_Renderer {
    *
    * @return string
    */
-  private static function render_inner( array $config ): string {
+  private static function render_inner( array $config, bool $interactive ): string {
+    $cta     = self::primary_cta( $config, $interactive );
+    $actions = '' === $cta ? '' : '<div class="memberful-paywall__actions">' . $cta . '</div>';
+
     return self::meter_block( $config )
            . self::heading_block( $config )
            . self::subheading_block( $config )
            . self::features_block( $config )
-           . '<div class="memberful-paywall__actions">' . self::primary_cta( $config ) . '</div>'
-           . self::sign_in_prompt( $config );
+           . $actions
+           . self::sign_in_prompt( $config, $interactive );
   }
 
   /**
@@ -253,18 +243,92 @@ class Memberful_Paywall_Renderer {
   }
 
   /**
-   * Primary subscribe CTA anchor.
+   * Primary CTA, or empty when there is no usable destination.
+   *
+   * Renders the free-registration upsell instead of the subscribe button when the visitor was blocked by the meter
+   * and creating a free account would grant additional views. Falls back to the subscribe button when the free
+   * destination resolves to nothing usable.
    *
    * @param array $config Sanitized config.
    *
    * @return string
    */
-  private static function primary_cta( array $config ): string {
+  private static function primary_cta( array $config, bool $interactive ): string {
+    $label = $config['button_label'];
+    $url   = self::subscribe_url( $config );
+
+    if ( self::should_show_free_registration_cta() ) {
+      $free_url = self::free_registration_url( $config );
+
+      if ( '' !== $free_url ) {
+        $label = $config['free_button_label'];
+        $url   = $free_url;
+      }
+    }
+
+    if ( '' === $url ) {
+      return '';
+    }
+
+    if ( ! $interactive ) {
+      return sprintf(
+        '<span class="memberful-paywall__button memberful-paywall__button--primary" aria-disabled="true">%s</span>',
+        esc_html( $label )
+      );
+    }
+
     return sprintf(
       '<a class="memberful-paywall__button memberful-paywall__button--primary" href="%s">%s</a>',
-      esc_url( self::subscribe_url( $config ) ),
-      esc_html( $config['button_label'] )
+      esc_url( $url ),
+      esc_html( $label )
     );
+  }
+
+  /**
+   * Whether the paywall should upsell a free registration instead of a paid subscription.
+   *
+   * True only for an anonymous free-meter render where free members get a higher metered limit - anonymous views
+   * merge into the account on login, so an equal or lower registered limit would grant no additional views. The
+   * paywall ships hidden and only appears once the client meter trips, so this reaches exactly the blocked visitors.
+   *
+   * @return bool
+   */
+  private static function should_show_free_registration_cta(): bool {
+    if ( is_user_logged_in() ) {
+      return false;
+    }
+
+    if ( ! class_exists( 'Memberful_Metering_Access' ) || ! class_exists( 'Memberful_Metering_Config' ) ) {
+      return false;
+    }
+
+    $post_id = (int) get_queried_object_id();
+
+    if ( ! $post_id || Memberful_Metering_Access::RENDER_FREE_METER !== Memberful_Metering_Access::current_anon_mode( $post_id ) ) {
+      return false;
+    }
+
+    $metering = Memberful_Metering_Config::get();
+
+    return (int) $metering['registered_limit'] > (int) $metering['anonymous_limit'];
+  }
+
+  /**
+   * Resolve the free-registration URL, falling back to the Memberful registration page when it resolves to an
+   * absolute URL.
+   *
+   * @param array $config Sanitized config.
+   *
+   * @return string
+   */
+  private static function free_registration_url( array $config ): string {
+    if ( ! empty( $config['free_button_url'] ) ) {
+      return $config['free_button_url'];
+    }
+
+    $registration_url = memberful_registration_page_url();
+
+    return wp_parse_url( $registration_url, PHP_URL_HOST ) ? $registration_url : '';
   }
 
   /**
@@ -274,7 +338,15 @@ class Memberful_Paywall_Renderer {
    *
    * @return string
    */
-  private static function sign_in_prompt( array $config ): string {
+  private static function sign_in_prompt( array $config, bool $interactive ): string {
+    if ( ! $interactive ) {
+      return sprintf(
+        '<p class="memberful-paywall__signin">%s <span class="memberful-paywall__signin-link" aria-disabled="true">%s</span></p>',
+        esc_html__( 'Already a subscriber?', 'memberful' ),
+        esc_html__( 'Sign in', 'memberful' )
+      );
+    }
+
     return sprintf(
       '<p class="memberful-paywall__signin">%s <a class="memberful-paywall__signin-link" href="%s">%s</a></p>',
       esc_html__( 'Already a subscriber?', 'memberful' ),
@@ -342,14 +414,20 @@ class Memberful_Paywall_Renderer {
   }
 
   /**
-   * Resolve the subscribe URL, falling back to the Memberful registration page.
+   * Resolve the subscribe URL, falling back to the Memberful registration page when it resolves to an absolute URL.
    *
    * @param array $config Sanitized config.
    *
    * @return string
    */
   private static function subscribe_url( array $config ): string {
-    return ! empty( $config['subscribe_url'] ) ? $config['subscribe_url'] : memberful_registration_page_url();
+    if ( ! empty( $config['subscribe_url'] ) ) {
+      return $config['subscribe_url'];
+    }
+
+    $registration_url = memberful_registration_page_url();
+
+    return wp_parse_url( $registration_url, PHP_URL_HOST ) ? $registration_url : '';
   }
 
   /**

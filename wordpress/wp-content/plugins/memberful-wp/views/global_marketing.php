@@ -56,7 +56,7 @@
 					<div id="global_marketing_paragraph_count_option" data-depends-on="use_global_snippets_checkbox" data-depends-value="1"<?php if ( ! $use_global_snippets ) echo ' style="display:none"'; ?>>
 						<p class="memberful-paywall-builder__field">
 							<label for="memberful_paragraph_count"><?php esc_html_e( 'Paragraphs before paywall', 'memberful' ); ?></label>
-							<input id="memberful_paragraph_count" type="number" min="1" max="10" name="memberful_paragraph_count" value="<?php echo esc_attr( min( 10, max( 1, $paragraph_count ) ) ); ?>">
+							<input id="memberful_paragraph_count" type="number" min="1" max="10" name="memberful_paragraph_count" value="<?php echo esc_attr( $paragraph_count ); ?>">
 						</p>
 					</div>
 				</div>

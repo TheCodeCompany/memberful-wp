@@ -1,9 +1,5 @@
 <?php
 
-if ( ! defined( 'MEMBERFUL_PARAGRAPH_COUNT' ) ) {
-  define( 'MEMBERFUL_PARAGRAPH_COUNT', 2 );
-}
-
 if(get_option('memberful_use_global_snippets')){
   add_filter( 'memberful_wp_protect_content', 'memberful_apply_global_snippets_content_filter', 1, 1 );
   add_filter( 'memberful_wp_listing_excerpt', 'memberful_wp_apply_paragraph_count_to_listing_excerpt', 10, 2 );
@@ -120,15 +116,6 @@ function memberful_get_teaser_css(){
 CSS;
 
   return $css;
-}
-
-/**
- * Resolve the configured number of teaser paragraphs shown before the paywall.
- *
- * @return int
- */
-function memberful_wp_paragraph_count(): int {
-  return min( 10, max( 1, (int) get_option( 'memberful_paragraph_count', MEMBERFUL_PARAGRAPH_COUNT ) ) );
 }
 
 /**

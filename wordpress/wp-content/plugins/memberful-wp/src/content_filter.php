@@ -1,6 +1,29 @@
 <?php
 
+if ( ! defined( 'MEMBERFUL_PARAGRAPH_COUNT' ) ) {
+  define( 'MEMBERFUL_PARAGRAPH_COUNT', 2 );
+}
+
 add_action( 'the_content', 'memberful_wp_protect_content', 100 );
+
+/**
+ * Clamp a paragraph count to the supported range.
+ *
+ * @param int $count Requested paragraph count.
+ * @return int
+ */
+function memberful_wp_clamp_paragraph_count( int $count ): int {
+  return min( 10, max( 1, $count ) );
+}
+
+/**
+ * Resolve the configured number of teaser paragraphs shown before the paywall.
+ *
+ * @return int
+ */
+function memberful_wp_paragraph_count(): int {
+  return memberful_wp_clamp_paragraph_count( (int) get_option( 'memberful_paragraph_count', MEMBERFUL_PARAGRAPH_COUNT ) );
+}
 
 /**
  * Get the marker inserted by the paywall divider block.

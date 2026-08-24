@@ -1,11 +1,8 @@
 <?php
 
-if ( ! defined( 'MEMBERFUL_PARAGRAPH_COUNT' ) ) {
-  define( 'MEMBERFUL_PARAGRAPH_COUNT', 2 );
-}
-
 if(get_option('memberful_use_global_snippets')){
   add_filter( 'memberful_wp_protect_content', 'memberful_apply_global_snippets_content_filter', 1, 1 );
+  add_filter( 'memberful_wp_listing_excerpt', 'memberful_wp_apply_paragraph_count_to_listing_excerpt', 10, 2 );
 } else {
   add_filter( 'memberful_wp_protect_content', 'memberful_get_global_replacement', 1, 1 );
 }
@@ -75,8 +72,9 @@ function memberful_apply_global_snippets_content_filter( $memberful_marketing_co
 
   if ( !empty( $original_content ) ) {
     $teaser_offset = 0;
+    $paragraph_count = memberful_wp_paragraph_count();
 
-    for ( $i = 0; $i < MEMBERFUL_PARAGRAPH_COUNT; $i++ ) {
+    for ( $i = 0; $i < $paragraph_count; $i++ ) {
       $paragraph_offset = strpos( $original_content, '</p>', $teaser_offset );
 
       if ( $paragraph_offset === false ) {
@@ -118,4 +116,23 @@ function memberful_get_teaser_css(){
 CSS;
 
   return $css;
+}
+
+/**
+ * Recut the archive listing excerpt to the configured paragraph count.
+ *
+ * @param string $teaser  Teaser produced for the listing.
+ * @param string $content Full rendered post content.
+ * @return string
+ */
+function memberful_wp_apply_paragraph_count_to_listing_excerpt( $teaser, $content ) {
+  if ( ! function_exists( 'memberful_wp_first_paragraphs' ) ) {
+    return $teaser;
+  }
+
+  if ( false !== strpos( (string) $content, memberful_wp_get_paywall_divider_marker() ) ) {
+    return $teaser;
+  }
+
+  return memberful_wp_first_paragraphs( (string) $content, memberful_wp_paragraph_count() );
 }

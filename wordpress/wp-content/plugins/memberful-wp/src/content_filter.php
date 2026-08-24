@@ -136,6 +136,24 @@ function memberful_wp_first_paragraphs( string $content, int $count ): string {
 }
 
 /**
+ * Rebuild the teaser from raw post content when the rendered copy lost the divider marker.
+ *
+ * Excerpt generation strips blocks before `the_content` runs, so the divider block never renders its marker there.
+ *
+ * @param WP_Post $post Post being rendered.
+ * @return string Rendered content above the divider block.
+ */
+function memberful_wp_content_above_divider_block( WP_Post $post ): string {
+  $parts = explode( '<!-- wp:memberful/paywall-divider', (string) $post->post_content, 2 );
+
+  if ( '' === trim( $parts[0] ) ) {
+    return '';
+  }
+
+  return strip_shortcodes( do_blocks( $parts[0] ) );
+}
+
+/**
  * Build the preview a protected post shows in listings.
  *
  * Bounded by the teaser the single post already shows above the paywall, so a listing can never expose more of a post
@@ -148,8 +166,13 @@ function memberful_wp_first_paragraphs( string $content, int $count ): string {
  * @return string
  */
 function memberful_wp_listing_excerpt( string $content, array $content_split ): string {
+  global $post;
+
   if ( $content_split['has_divider'] ) {
     $teaser = $content_split['content_above_divider'];
+  } elseif ( isset( $post ) && has_block( 'memberful/paywall-divider', $post ) ) {
+    // The marker is missing but the post has a divider, so this render stripped blocks.
+    return memberful_wp_content_above_divider_block( $post );
   } elseif ( get_option( 'memberful_use_global_marketing' ) && get_option( 'memberful_use_global_snippets' ) ) {
     $teaser = memberful_wp_first_paragraphs( $content, MEMBERFUL_PARAGRAPH_COUNT );
   } else {

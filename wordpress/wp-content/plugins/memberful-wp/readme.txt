@@ -115,6 +115,7 @@ Glad you asked! We manage development of the plugin over at the [Memberful WP Gi
 = unreleased =
 
 * Add a visual paywall builder for creating branded paywalls without writing HTML
+* Allow customizing how many paragraphs appear before the paywall
 
 = 1.81.0 =
 

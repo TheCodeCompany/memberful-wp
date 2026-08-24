@@ -885,6 +885,7 @@ function memberful_wp_global_marketing() {
       update_option( 'memberful_use_global_marketing', true );
       update_option( 'memberful_global_marketing_override', filter_input( INPUT_POST, 'memberful_global_marketing_override', FILTER_SANITIZE_NUMBER_INT ) );
       update_option( 'memberful_use_global_snippets', (int) isset( $_POST['memberful_use_global_snippets'] ) );
+      update_option( 'memberful_paragraph_count', memberful_wp_clamp_paragraph_count( (int) filter_input( INPUT_POST, 'memberful_paragraph_count', FILTER_SANITIZE_NUMBER_INT ) ) );
 
       $paywall_input = filter_input( INPUT_POST, 'memberful_paywall', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY );
       if ( is_array( $paywall_input ) && ! empty( $paywall_input ) ) {
@@ -904,12 +905,14 @@ function memberful_wp_global_marketing() {
   $use_global_snippets = get_option( 'memberful_use_global_snippets');
   $global_marketing_content = get_option( 'memberful_global_marketing_content' );
   $global_marketing_override = get_option( 'memberful_global_marketing_override', true );
+  $paragraph_count = memberful_wp_paragraph_count();
 
   memberful_wp_render(
     'global_marketing',
     array(
       'use_global_marketing'      => $use_global_marketing,
       'use_global_snippets'       => $use_global_snippets,
+      'paragraph_count'           => $paragraph_count,
       'global_marketing_content'  => $global_marketing_content,
       'global_marketing_override' => $global_marketing_override,
       'paywall_config'            => Memberful_Paywall_Config::get(),

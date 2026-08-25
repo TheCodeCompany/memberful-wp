@@ -12,7 +12,7 @@ const makeCountdownNode = (attributes) => ({
   hidden: true,
 });
 
-const runRuntime = async ({ mode, stored = null, response = { success: true, data: {} }, countdownNode = null }) => {
+const runRuntime = async ({ mode, stored = null, response = { success: true, data: {} }, countdownNode = null, limit = 3, container = null }) => {
   const requests = [];
   const values = new Map();
 
@@ -26,7 +26,15 @@ const runRuntime = async ({ mode, stored = null, response = { success: true, dat
   };
   const document = {
     documentElement: { classList: { add: () => {} } },
-    querySelector: (selector) => (selector === '[data-memberful-countdown]' ? countdownNode : null),
+    querySelector: (selector) => {
+      if (selector === '[data-memberful-countdown]') {
+        return countdownNode;
+      }
+      if (selector === '.memberful-metering') {
+        return container;
+      }
+      return null;
+    },
   };
   const window = {
     URLSearchParams,
@@ -34,7 +42,7 @@ const runRuntime = async ({ mode, stored = null, response = { success: true, dat
     memberfulMetering: {
       action: 'memberful_metering_sample',
       ajaxUrl: '/wp-admin/admin-ajax.php',
-      limit: 3,
+      limit,
       mode,
       periodDays: 30,
       postId: 42,
@@ -163,6 +171,63 @@ test('leaves the countdown hidden when the selected template is empty', async ()
   });
 
   assert.equal(node.hidden, true);
+});
+
+test('leaves the countdown hidden when the meter blocks the view', async () => {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const node = makeCountdownNode(countdownTemplates);
+  await runRuntime({
+    mode: 'free_meter',
+    countdownNode: node,
+    stored: { v: 2, pending: {}, views: { 10: timestamp, 11: timestamp, 12: timestamp } },
+  });
+
+  assert.equal(node.hidden, true);
+  assert.equal(node.textContent, '');
+});
+
+test('leaves the countdown hidden when the free limit is zero', async () => {
+  const node = makeCountdownNode(countdownTemplates);
+  await runRuntime({ mode: 'free_meter', countdownNode: node, limit: 0 });
+
+  assert.equal(node.hidden, true);
+  assert.equal(node.textContent, '');
+});
+
+test('hydrates the released body countdown after a protected sample release', async () => {
+  const bodyNode = makeCountdownNode(countdownTemplates);
+  const staleNode = makeCountdownNode(countdownTemplates);
+  const content = {
+    hidden: true,
+    innerHTML: '',
+    querySelector: (selector) => (selector === '[data-memberful-countdown]' ? bodyNode : null),
+  };
+  const paywall = { hidden: false };
+  const container = {
+    querySelector: (selector) => {
+      if (selector === '.memberful-metering__content') {
+        return content;
+      }
+      if (selector === '.memberful-metering__paywall') {
+        return paywall;
+      }
+      return null;
+    },
+  };
+
+  await runRuntime({
+    mode: 'protected_sample',
+    container,
+    countdownNode: staleNode,
+    response: { success: true, data: { released: true, html: '<p>Full body</p>', remaining: 1, synced: [] } },
+  });
+
+  assert.equal(content.hidden, false);
+  assert.equal(paywall.hidden, true);
+  assert.equal(bodyNode.textContent, 'You have 1 free article left.');
+  assert.equal(bodyNode.hidden, false);
+  assert.equal(staleNode.textContent, '');
+  assert.equal(staleNode.hidden, true);
 });
 
 test('acknowledges pending public views even when a protected sample is denied', async () => {

@@ -21,18 +21,21 @@ if ( '' === trim( $template ) && '' === trim( $singular ) && '' === trim( $last_
 
 // Anonymous / cached path: emit a hidden placeholder with every template so the client-side
 // meter can pick the right message once it knows the remaining count.
-if ( Memberful_Metering_Access::RENDER_NONE !== Memberful_Metering_Access::current_anon_mode( $post_id ) ) {
+if (
+	Memberful_Metering_Access::RENDER_NONE !== Memberful_Metering_Access::current_anon_mode( $post_id )
+	|| ( function_exists( 'memberful_metering_is_releasing' ) && memberful_metering_is_releasing( (int) get_the_ID() ) )
+) {
 	printf(
 		'<p %s hidden>%s</p>',
 		get_block_wrapper_attributes(
 			array(
 				'data-memberful-countdown'         => '1',
-				'data-memberful-template'          => $template,
-				'data-memberful-template-singular' => $singular,
-				'data-memberful-template-last'     => $last_template,
+				'data-memberful-template'          => wp_strip_all_tags( $template ),
+				'data-memberful-template-singular' => wp_strip_all_tags( $singular ),
+				'data-memberful-template-last'     => wp_strip_all_tags( $last_template ),
 			)
 		),
-		esc_html( str_replace( '{count}', '', $template ) )
+		esc_html( wp_strip_all_tags( str_replace( '{count}', '', $template ) ) )
 	);
 	return;
 }

@@ -180,7 +180,7 @@ class Memberful_Paywall_Renderer {
      * @param array    $config Sanitized paywall config.
      */
     $limit = apply_filters( 'memberful_paywall_free_view_limit', null, $config );
-    if ( null === $limit ) {
+    if ( null === $limit || $limit < 1 ) {
       return '';
     }
 

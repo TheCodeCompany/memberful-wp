@@ -81,6 +81,17 @@ class Memberful_Paywall_Config {
 	 * @return bool True when the option was updated, false when unchanged or on failure.
 	 */
 	public static function save( array $input ): bool {
+		// Metering-owned fields are not rendered while metering is off, so carry the stored values through the save.
+		$metering_enabled = class_exists( 'Memberful_Metering_Config' ) && ! empty( Memberful_Metering_Config::get()['enabled'] );
+
+		if ( ! $metering_enabled ) {
+			$stored = self::get();
+
+			foreach ( array( 'show_counter', 'counter_template', 'free_button_label', 'free_button_url' ) as $key ) {
+				$input[ $key ] = $stored[ $key ];
+			}
+		}
+
 		$clean = Memberful_Paywall_Sanitizer::sanitize( $input, self::defaults() );
 
 		return update_option( self::OPTION_KEY, $clean );

@@ -143,8 +143,8 @@
     document.documentElement.classList.add('memberful-metering-tripped');
   };
 
-  const hydrateCountdown = (remaining) => {
-    const node = document.querySelector('[data-memberful-countdown]');
+  const hydrateCountdown = (remaining, root = document) => {
+    const node = root.querySelector('[data-memberful-countdown]');
     if (!node) {
       return;
     }
@@ -170,7 +170,6 @@
     if (cfg.limit <= 0) {
       syncPending(state).catch(() => {});
       setTripped();
-      hydrateCountdown(0);
       return;
     }
 
@@ -179,7 +178,6 @@
     if (!alreadyCounted && Object.keys(state.views).length >= cfg.limit) {
       syncPending(state).catch(() => {});
       setTripped();
-      hydrateCountdown(0);
       return;
     }
 
@@ -220,7 +218,7 @@
         }
 
         record(persist(pruneState(readState())), false);
-        hydrateCountdown(data.remaining || 0);
+        hydrateCountdown(data.remaining || 0, content || container);
       })
       .catch(() => {
         // Endpoint/network failure leaves the cached paywall in place - fail-closed for protected content.

@@ -87,16 +87,21 @@ class Memberful_Paywall_Preview {
 	}
 
 	/**
-	 * Sample free-view limit so the counter renders in the builder preview, which has no live metered context.
+	 * Sample free-view limit so the counter renders in the builder preview, which has no live metered context. Keeps
+	 * the incoming null while metering is disabled, matching the live paywall, which never shows the counter then.
 	 *
-	 * @param int|null $limit Incoming limit (unused).
+	 * @param int|null $limit Incoming limit.
 	 *
-	 * @return int
+	 * @return int|null
 	 */
-	public static function sample_free_view_limit( ?int $limit ): int {
-		unset( $limit );
+	public static function sample_free_view_limit( ?int $limit ): ?int {
+		$config = Memberful_Metering_Config::get();
 
-		return (int) Memberful_Metering_Config::get()['anonymous_limit'];
+		if ( empty( $config['enabled'] ) ) {
+			return $limit;
+		}
+
+		return (int) $config['anonymous_limit'];
 	}
 
 	/**

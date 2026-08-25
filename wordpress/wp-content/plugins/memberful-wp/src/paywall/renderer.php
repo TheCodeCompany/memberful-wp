@@ -156,7 +156,8 @@ class Memberful_Paywall_Renderer {
   /**
    * Free-view counter eyebrow. Rendered only when enabled and the current view is metered — a listener on
    * memberful_paywall_free_view_limit returns the applicable limit, and null (the default) hides it on non-metered
-   * paywalls (the same builder markup also fronts the hard paywall for members-only posts).
+   * paywalls (the same builder markup also fronts the hard paywall for members-only posts). A zero limit has nothing
+   * to count, so it hides the counter too.
    *
    * @param array $config Sanitized config.
    *
@@ -174,7 +175,8 @@ class Memberful_Paywall_Renderer {
 
     /**
      * Filter the free-view limit shown in the paywall counter. Return null (the default) to hide the counter when the
-     * current view is not metered; the metering module returns the applicable anonymous or registered limit.
+     * current view is not metered; the metering module returns the applicable anonymous or registered limit. Only a
+     * positive integer renders the counter.
      *
      * @param int|null $limit  Applicable free-view limit, or null when the current view is not metered.
      * @param array    $config Sanitized paywall config.
@@ -290,6 +292,8 @@ class Memberful_Paywall_Renderer {
    * True only for an anonymous free-meter render where free members get a higher metered limit - anonymous views
    * merge into the account on login, so an equal or lower registered limit would grant no additional views. The
    * paywall ships hidden and only appears once the client meter trips, so this reaches exactly the blocked visitors.
+   * Protected samples are excluded on purpose: their paywall is served visible before the endpoint decides, so
+   * blocked-only messaging would show to visitors about to be released.
    *
    * @return bool
    */

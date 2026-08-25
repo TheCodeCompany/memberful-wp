@@ -411,7 +411,9 @@ function memberful_wp_default_paywall_content(): string {
 /**
  * Supply the free-view limit for the paywall counter when the queried post is a tripped metered view, so the paywall
  * can show e.g. "You've used all N of your free articles". Returns the incoming value (null) otherwise, which keeps the
- * counter hidden on ordinary (non-metered) paywalls that reuse the same builder markup.
+ * counter hidden on ordinary (non-metered) paywalls that reuse the same builder markup. Protected samples are excluded
+ * on purpose: their paywall is served visible before the endpoint decides, so the counter would show to visitors about
+ * to be released.
  *
  * @param int|null $limit Incoming limit (null by default).
  *

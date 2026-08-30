@@ -27,16 +27,28 @@ class Memberful_Metering_Sanitizer {
     $period               = absint( $input['period_days'] ?? 0 );
     $clean['period_days'] = $period > 0 ? $period : $defaults['period_days'];
 
-    $anonymous_limit  = absint( $input['anonymous_limit'] ?? $defaults['anonymous_limit'] );
-    $registered_limit = absint( $input['registered_limit'] ?? $defaults['registered_limit'] );
-
-    $clean['anonymous_limit']  = min( $anonymous_limit, Memberful_Metering_Storage::MAX_VIEWS );
-    $clean['registered_limit'] = min( $registered_limit, Memberful_Metering_Storage::MAX_VIEWS );
+    $clean['anonymous_limit']  = self::limit( $input['anonymous_limit'] ?? '', $defaults['anonymous_limit'] );
+    $clean['registered_limit'] = self::limit( $input['registered_limit'] ?? '', $defaults['registered_limit'] );
 
     $clean['rules']         = self::rules( $input['rules'] ?? array() );
     $clean['exclude_rules'] = self::rules( $input['exclude_rules'] ?? array() );
 
     return $clean;
+  }
+
+  /**
+   * Sanitize a free-views limit. A blank field keeps the default; an explicit 0 is a valid "no free views" setting.
+   *
+   * @param mixed $raw     Raw field value.
+   * @param int   $default Default limit.
+   *
+   * @return int
+   */
+  private static function limit( $raw, int $default ): int {
+    $raw   = trim( (string) $raw );
+    $limit = '' === $raw ? $default : absint( $raw );
+
+    return min( $limit, Memberful_Metering_Storage::MAX_VIEWS );
   }
 
   /**

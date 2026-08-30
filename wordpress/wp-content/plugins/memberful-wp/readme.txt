@@ -4,7 +4,7 @@ Tags: membership, subscriptions, paywall, stripe, recurring payments, memberful,
 Requires at least: 6.3
 Tested up to: 6.9.1
 Requires PHP: 7.4
-Stable tag: 1.80.0
+Stable tag: 1.81.0
 License: GPLv2 or later
 
 Sell memberships and restrict access to content with WordPress and Memberful.
@@ -114,14 +114,21 @@ Glad you asked! We manage development of the plugin over at the [Memberful WP Gi
 
 = unreleased =
 
+* Add a visual paywall builder for creating branded paywalls without writing HTML
+* Allow customizing how many paragraphs appear before the paywall
 * Add Memberful visibility settings to the Advanced tab of Beaver Builder rows, columns, and modules, matching the block editor visibility controls
-* Add the `memberful_subscriptions_link` shortcode for linking to the subscriptions page
-* Improve the debug tool
 * Fix Beaver Builder layouts not rendering for other posts after a protected post in the same request
 * Fix duplicate content-protection filter registered when building the global marketing teaser
 * Fix shortcodes emitted by blocks in marketing content never executing (run blocks before shortcodes, matching core)
 * Fix empty teaser wrapper and teaser CSS being output when a protected post has no teaser content
 * Fix Sensei integration failing to unhook content protection due to a missing filter priority
+
+= 1.81.0 =
+
+* Add the `memberful_subscriptions_link` shortcode for linking to the subscriptions page
+* Improve the debug tool
+* Fix block protection styling
+* Fix paywall divider alignment
 
 = 1.80.0 =
 

@@ -63,6 +63,20 @@ $exclude_intro = __( 'Exclude when', 'memberful' );
         </label>
       </div>
 
+      <?php if ( ! empty( $config['enabled'] ) && ! get_option( 'memberful_use_global_marketing' ) ) : ?>
+        <div class="notice notice-warning inline">
+          <p>
+            <?php
+            printf(
+              /* translators: %s: URL of the Global Paywall settings screen. */
+              wp_kses_post( __( 'Metering is on, but the global paywall is disabled, so there is nothing to show visitors who hit the limit and matching posts are not metered. <a href="%s">Turn on the global paywall</a> to start metering.', 'memberful' ) ),
+              esc_url( memberful_wp_plugin_global_marketing_url() )
+            );
+            ?>
+          </p>
+        </div>
+      <?php endif; ?>
+
       <div class="memberful-metering-section">
         <h4 class="memberful-metering-section-heading"><?php esc_html_e( 'Free reading limits', 'memberful' ); ?></h4>
         <p class="memberful-metering-section-intro"><?php esc_html_e( 'How many matching posts a visitor can read before the paywall appears.', 'memberful' ); ?></p>
@@ -104,6 +118,7 @@ $exclude_intro = __( 'Exclude when', 'memberful' );
                 <span>
                   <?php esc_html_e( "Also count members-only posts toward a visitor's free allowance", 'memberful' ); ?>
                   <span class="description"><?php esc_html_e( "When off (recommended), members-only posts always show the paywall and don't use up any of the free reads above. When on, non-members can sample members-only posts — each view uses one free read, and the membership paywall appears once those run out.", 'memberful' ); ?></span>
+                  <span class="description"><?php esc_html_e( 'Sampled members-only pages are served non-cacheable. If your host or CDN caches pages for logged-out visitors regardless, a sampled post could be cached in full and shown to everyone, so leave this off unless your caching setup honours no-store.', 'memberful' ); ?></span>
                 </span>
               </label>
             </div>
@@ -139,6 +154,8 @@ $exclude_intro = __( 'Exclude when', 'memberful' );
           </summary>
           <div class="memberful-metering-notes__body">
             <p><?php esc_html_e( 'Metered pages vary per visitor, so Memberful serves them as non-cacheable (no-store / DONOTCACHEPAGE). Page-cache plugins such as WP Super Cache, W3 Total Cache, WP Rocket and LiteSpeed honour this automatically. Edge caches such as Cloudflare or Varnish must be configured to bypass metered URLs, or one visitor\'s view could be cached and shown to everyone.', 'memberful' ); ?></p>
+            <p><?php esc_html_e( 'Hosts whose edge cache ignores no-store for logged-out visitors, such as WP Engine\'s Edge Full Page Cache, are not supported for anonymous metering in this release. Metering of signed-in members is unaffected because their pages are never page-cached.', 'memberful' ); ?></p>
+            <p><?php esc_html_e( 'Anonymous visitors are counted with a signed cookie, so clearing cookies or switching browsers starts a fresh allowance. Treat the meter as a conversion tool for public content rather than an access-control boundary: members-only content stays protected by your normal access rules unless you opt in above.', 'memberful' ); ?></p>
           </div>
         </details>
       </div>

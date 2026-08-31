@@ -347,6 +347,7 @@ class Memberful_Paywall_Renderer {
     $brand_color = isset( $config['brand_color'] ) ? sanitize_hex_color( (string) $config['brand_color'] ) : '';
     if ( ! empty( $brand_color ) ) {
       $parts[] = '--memberful-brand:' . $brand_color;
+      $parts[] = '--memberful-brand-text:' . Memberful_Paywall_Color::contrast_text_color( $brand_color );
     }
 
     $background_color = isset( $config['background_color'] ) ? sanitize_hex_color( (string) $config['background_color'] ) : '';

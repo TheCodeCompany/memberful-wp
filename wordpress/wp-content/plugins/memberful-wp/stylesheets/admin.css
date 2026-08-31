@@ -167,6 +167,19 @@ Global Marketing Tools
   padding-left: 2em;
 }
 
+/* "Paragraphs before paywall" field — match the paywall builder field styling */
+#global_marketing_paragraph_count_option .memberful-paywall-builder__field {
+  margin: 1.5em 0 0 1.8em;
+}
+#global_marketing_paragraph_count_option .memberful-paywall-builder__field label {
+  color: #6b7280;
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
 /* ---------------------------------------------------------
 Metering
 ------------------------------------------------------------ */

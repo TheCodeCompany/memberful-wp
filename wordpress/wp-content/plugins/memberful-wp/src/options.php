@@ -30,6 +30,7 @@ function memberful_wp_all_options(): array {
     'memberful_use_global_snippets'                    => TRUE,
     'memberful_global_marketing_override'              => TRUE,
     'memberful_global_marketing_content'               => '',
+    'memberful_paragraph_count'                        => 2,
     'memberful_ad_provider_settings'                   => array(),
     Memberful_Paywall_Config::OPTION_KEY               => array(),
     Memberful_Metering_Config::OPTION_KEY              => array(),

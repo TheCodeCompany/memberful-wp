@@ -249,9 +249,9 @@ class Memberful_Paywall_Renderer {
   /**
    * Whether the paywall should upsell a free registration instead of a paid subscription.
    *
-   * True only when a logged-out visitor was blocked by the meter on the post under view and free members get a
-   * higher metered limit - anonymous views merge into the account on login, so an equal or lower registered limit
-   * would grant no additional views.
+   * True only when a logged-out visitor was blocked by the meter on the post under view and free members have a
+   * metered allowance of their own. Anonymous and registered allowances are independent, so registering always
+   * grants the full registered limit; only a zero registered limit would make the upsell pointless.
    *
    * @return bool
    */
@@ -276,7 +276,7 @@ class Memberful_Paywall_Renderer {
       return false;
     }
 
-    return (int) $metering['registered_limit'] > (int) $metering['anonymous_limit'];
+    return (int) $metering['registered_limit'] > 0;
   }
 
   /**

@@ -198,7 +198,7 @@ $metering_enabled = class_exists( 'Memberful_Metering_Config' ) && ! empty( Memb
       <?php if ( $metering_enabled ) : ?>
         <fieldset class="memberful-paywall-builder__field memberful-paywall-builder__button-set">
           <legend class="memberful-paywall-builder__button-set-label"><?php esc_html_e( 'Free registration button', 'memberful' ); ?></legend>
-          <span class="description memberful-paywall-builder__button-set-description"><?php esc_html_e( 'Shown instead of the subscribe button when a logged-out visitor hits the metered limit and free members get a higher limit.', 'memberful' ); ?></span>
+          <span class="description memberful-paywall-builder__button-set-description"><?php esc_html_e( 'Shown instead of the subscribe button when a logged-out visitor hits the metered limit. Free members get their own allowance, so registering always unlocks more articles.', 'memberful' ); ?></span>
           <p class="memberful-paywall-builder__field">
             <label for="memberful-paywall-free-button-label"><?php esc_html_e( 'Button label', 'memberful' ); ?></label>
             <input id="memberful-paywall-free-button-label" type="text" name="memberful_paywall[free_button_label]" value="<?php echo esc_attr( $paywall_config['free_button_label'] ); ?>">

@@ -97,14 +97,6 @@ class Memberful_Metering_Storage {
   }
 
   /**
-   * Clear the anonymous views cookie (e.g. after merging into user meta on login).
-   */
-  public static function clear_anonymous_cookie(): void {
-    self::send_cookie( '', time() - 3600 );
-    unset( $_COOKIE[ self::COOKIE_NAME ] );
-  }
-
-  /**
    * Drop views older than the rolling-window cutoff.
    *
    * @param array<int, int> $views       Map of post_id => unix timestamp.

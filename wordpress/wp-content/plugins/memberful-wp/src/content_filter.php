@@ -162,18 +162,97 @@ function memberful_wp_first_paragraphs( string $content, int $count ): string {
  * Rebuild the teaser from raw post content when the rendered copy lost the divider marker.
  *
  * Excerpt generation strips blocks before `the_content` runs, so the divider block never renders its marker there.
+ * The block tree is truncated at the divider, wherever it is nested, rather than splitting the raw markup, so any
+ * wrapping Group or Columns blocks keep their closing markup and render as valid HTML.
  *
  * @param WP_Post $post Post being rendered.
  * @return string Rendered content above the divider block.
  */
 function memberful_wp_content_above_divider_block( WP_Post $post ): string {
-  $parts = explode( '<!-- wp:memberful/paywall-divider', (string) $post->post_content, 2 );
+  $found  = false;
+  $blocks = memberful_wp_blocks_above_divider( parse_blocks( (string) $post->post_content ), $found );
 
-  if ( '' === trim( $parts[0] ) ) {
+  // Fail closed: without the divider in the parsed tree there is nothing to cut at, so render no teaser rather than
+  // the whole post.
+  if ( ! $found || empty( $blocks ) ) {
     return '';
   }
 
-  return strip_shortcodes( do_blocks( $parts[0] ) );
+  // Truncated wrappers render without their closing markup (see memberful_wp_inner_content_for_blocks()).
+  return force_balance_tags( strip_shortcodes( do_blocks( serialize_blocks( $blocks ) ) ) );
+}
+
+/**
+ * Keep the blocks that precede the first paywall divider, descending into nested blocks.
+ *
+ * Everything after the divider in document order is dropped, including later siblings of its ancestors (a divider
+ * in the first column drops the second column), matching how the single-post view cuts at the divider marker.
+ * A wrapper the divider opens contributes nothing and is dropped as well.
+ *
+ * @param array $blocks Parsed blocks.
+ * @param bool  $found  Set to true once the divider has been seen; nothing after it is kept.
+ * @return array
+ */
+function memberful_wp_blocks_above_divider( array $blocks, bool &$found ): array {
+  $kept = array();
+
+  foreach ( $blocks as $block ) {
+    if ( 'memberful/paywall-divider' === $block['blockName'] ) {
+      $found = true;
+      break;
+    }
+
+    if ( ! empty( $block['innerBlocks'] ) ) {
+      $inner_blocks = memberful_wp_blocks_above_divider( $block['innerBlocks'], $found );
+
+      if ( $found ) {
+        if ( empty( $inner_blocks ) ) {
+          break;
+        }
+
+        $block['innerContent'] = memberful_wp_inner_content_for_blocks( $block['innerContent'], count( $inner_blocks ) );
+        $block['innerBlocks']  = $inner_blocks;
+      }
+    }
+
+    $kept[] = $block;
+
+    if ( $found ) {
+      break;
+    }
+  }
+
+  return $kept;
+}
+
+/**
+ * Trim a block's innerContent to its first $count inner-block placeholders.
+ *
+ * innerContent interleaves HTML strings with null placeholders, one per inner block in order. Dropping trailing
+ * inner blocks means dropping their placeholders and every chunk from the first dropped placeholder on. That
+ * includes the wrapper's closing markup, which is deliberately not re-attached: the trailing chunk can carry raw
+ * HTML that sits below the divider, so the caller balances tags after rendering instead.
+ *
+ * @param array $inner_content Block innerContent.
+ * @param int   $count         Number of inner blocks kept.
+ * @return array
+ */
+function memberful_wp_inner_content_for_blocks( array $inner_content, int $count ): array {
+  $trimmed = array();
+  $seen    = 0;
+
+  foreach ( $inner_content as $chunk ) {
+    if ( null === $chunk ) {
+      if ( $seen >= $count ) {
+        break;
+      }
+      $seen++;
+    }
+
+    $trimmed[] = $chunk;
+  }
+
+  return $trimmed;
 }
 
 /**

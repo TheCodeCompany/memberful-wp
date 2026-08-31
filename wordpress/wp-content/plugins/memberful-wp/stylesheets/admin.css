@@ -783,6 +783,19 @@ Paywall Builder
   margin-bottom: 4px;
   text-transform: uppercase;
 }
+.memberful-paywall-builder__customize .memberful-paywall-builder__checkline {
+  align-items: flex-start;
+  color: inherit;
+  display: flex;
+  font-size: 13px;
+  font-weight: 400;
+  gap: 8px;
+  margin-bottom: 8px;
+  text-transform: none;
+}
+.memberful-paywall-builder__customize .memberful-paywall-builder__checkline input[type="checkbox"] {
+  margin-top: 2px;
+}
 .memberful-paywall-builder__customize input[type="text"],
 .memberful-paywall-builder__customize input[type="url"],
 .memberful-paywall-builder__customize textarea {

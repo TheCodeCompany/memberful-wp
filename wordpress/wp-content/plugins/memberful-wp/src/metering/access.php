@@ -25,6 +25,7 @@ class Memberful_Metering_Access {
    */
   public static function register(): void {
     add_action( 'template_redirect', array( __CLASS__, 'on_template_redirect' ) );
+    add_filter( 'memberful_paywall_free_view_limit', array( __CLASS__, 'filter_paywall_free_view_limit' ) );
   }
 
   /**
@@ -37,6 +38,12 @@ class Memberful_Metering_Access {
 
     $config = Memberful_Metering_Config::get();
     if ( empty( $config['enabled'] ) || empty( $config['rules'] ) ) {
+      return;
+    }
+
+    // Without the global paywall there is nothing to show once the meter trips - the post would render blank - so
+    // treat an unconfigured paywall as "not metered". The Metering screen warns about this state.
+    if ( ! get_option( 'memberful_use_global_marketing' ) ) {
       return;
     }
 
@@ -146,6 +153,29 @@ class Memberful_Metering_Access {
     return isset( self::$decisions[ $post_id ]['remaining'] )
       ? (int) self::$decisions[ $post_id ]['remaining']
       : 0;
+  }
+
+  /**
+   * Supply the free-view limit shown in the paywall counter when the meter blocked the post under view.
+   *
+   * Leaves the incoming value untouched for every other paywall render (members-only posts, non-metered posts, the
+   * admin preview), so the counter stays hidden there. Untyped on purpose: this is a public filter and an earlier
+   * third-party callback may hand over anything; the renderer normalises the final value.
+   *
+   * @param int|null $limit Incoming limit. Null hides the counter.
+   *
+   * @return int|null
+   */
+  public static function filter_paywall_free_view_limit( $limit ) {
+    $post_id = (int) get_queried_object_id();
+
+    if ( ! $post_id || self::DECISION_TRIP_METER !== self::get_current_decision( $post_id ) ) {
+      return $limit;
+    }
+
+    $config = Memberful_Metering_Config::get();
+
+    return (int) ( get_current_user_id() ? $config['registered_limit'] : $config['anonymous_limit'] );
   }
 
   /**

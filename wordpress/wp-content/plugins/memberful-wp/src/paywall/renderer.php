@@ -145,11 +145,54 @@ class Memberful_Paywall_Renderer {
     $cta     = self::primary_cta( $config, $interactive );
     $actions = '' === $cta ? '' : '<div class="memberful-paywall__actions">' . $cta . '</div>';
 
-    return self::heading_block( $config )
+    return self::meter_block( $config )
+           . self::heading_block( $config )
            . self::subheading_block( $config )
            . self::features_block( $config )
            . $actions
            . self::sign_in_prompt( $config, $interactive );
+  }
+
+  /**
+   * Free-view counter eyebrow, or empty when disabled or the current view is not metered.
+   *
+   * The same builder markup also fronts the hard paywall on members-only posts, so the counter only renders when a
+   * listener on memberful_paywall_free_view_limit returns the applicable limit; the metering module does so when the
+   * meter blocked the post under view. A zero limit has nothing to count, so it hides the counter too.
+   *
+   * @param array $config Sanitized config.
+   *
+   * @return string
+   */
+  private static function meter_block( array $config ): string {
+    if ( empty( $config['show_counter'] ) ) {
+      return '';
+    }
+
+    $template = isset( $config['counter_template'] ) ? (string) $config['counter_template'] : '';
+    if ( '' === trim( $template ) ) {
+      return '';
+    }
+
+    /**
+     * Filter the free-view limit shown in the paywall counter.
+     *
+     * Return null (the default) to hide the counter when the current view is not metered. The metering module
+     * returns the anonymous or registered limit when the meter blocked the post under view. Only a positive
+     * integer renders the counter.
+     *
+     * @param int|null $limit  Applicable free-view limit, or null when the current view is not metered.
+     * @param array    $config Sanitized paywall config.
+     */
+    $limit = apply_filters( 'memberful_paywall_free_view_limit', null, $config );
+    if ( null === $limit || (int) $limit < 1 ) {
+      return '';
+    }
+
+    return sprintf(
+      '<p class="memberful-paywall__meter">%s</p>',
+      esc_html( str_replace( '{limit}', number_format_i18n( (int) $limit ), $template ) )
+    );
   }
 
   /**

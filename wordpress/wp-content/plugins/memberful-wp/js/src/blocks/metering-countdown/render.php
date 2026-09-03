@@ -13,7 +13,7 @@
 $post_id = get_queried_object_id();
 
 if ( Memberful_Metering_Access::DECISION_ALLOW_SAMPLE !== Memberful_Metering_Access::get_current_decision( $post_id ) ) {
-	return;
+  return;
 }
 
 $remaining = Memberful_Metering_Access::get_current_remaining( $post_id );
@@ -24,25 +24,25 @@ $remaining = Memberful_Metering_Access::get_current_remaining( $post_id );
  * the singular wording when exactly one view remains.
  */
 if ( 0 === $remaining ) {
-	$template = isset( $attributes['lastArticleTemplate'] ) ? (string) $attributes['lastArticleTemplate'] : '';
+  $template = isset( $attributes['lastArticleTemplate'] ) ? (string) $attributes['lastArticleTemplate'] : '';
 } elseif ( 1 === $remaining ) {
-	$template = isset( $attributes['singularTemplate'] ) ? (string) $attributes['singularTemplate'] : '';
+  $template = isset( $attributes['singularTemplate'] ) ? (string) $attributes['singularTemplate'] : '';
 } else {
-	$template = isset( $attributes['template'] ) ? (string) $attributes['template'] : '';
+  $template = isset( $attributes['template'] ) ? (string) $attributes['template'] : '';
 }
 
 $message = str_replace(
-	'{count}',
-	number_format_i18n( $remaining ),
-	$template
+  '{count}',
+  number_format_i18n( $remaining ),
+  $template
 );
 
 if ( '' === trim( $message ) ) {
-	return;
+  return;
 }
 
 printf(
-	'<p %s>%s</p>',
-	get_block_wrapper_attributes(),
-	wp_kses_post( $message )
+  '<p %s>%s</p>',
+  get_block_wrapper_attributes(),
+  wp_kses_post( $message )
 );

@@ -178,8 +178,16 @@ function memberful_wp_content_above_divider_block( WP_Post $post ): string {
     return '';
   }
 
+  // Rendered block by block rather than through do_blocks(): called from inside the_content at priority 100,
+  // do_blocks() unhooks wpautop and schedules its restore at priority 11, which never runs, so the next post rendered
+  // on the page would lose its paragraphs.
+  $output = '';
+  foreach ( $blocks as $block ) {
+    $output .= render_block( $block );
+  }
+
   // Truncated wrappers render without their closing markup (see memberful_wp_inner_content_for_blocks()).
-  return force_balance_tags( strip_shortcodes( do_blocks( serialize_blocks( $blocks ) ) ) );
+  return force_balance_tags( strip_shortcodes( $output ) );
 }
 
 /**

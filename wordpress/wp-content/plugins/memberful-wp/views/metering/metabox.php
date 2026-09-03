@@ -10,7 +10,6 @@
 <label>
   <input
     type="checkbox"
-    id="memberful_metering_exempt"
     name="memberful_metering_exempt"
     value="1"
     <?php checked( $exempt ); ?>

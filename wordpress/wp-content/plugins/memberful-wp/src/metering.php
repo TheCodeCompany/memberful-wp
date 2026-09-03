@@ -22,6 +22,11 @@ function memberful_wp_metering_settings() {
     $raw_config = empty( $_POST['memberful_metering'] ) ? array() : (array) wp_unslash( $_POST['memberful_metering'] );
 
     Memberful_Metering_Config::save( $raw_config );
+
+    Memberful_Wp_Reporting::report( __( 'Settings updated', 'memberful' ) );
+
+    wp_redirect( memberful_wp_plugin_metering_url() );
+    exit;
   }
 
   memberful_wp_render(
@@ -31,7 +36,7 @@ function memberful_wp_metering_settings() {
       'fields'            => Memberful_Metering_Config::fields(),
       'operators'         => Memberful_Metering_Config::operators(),
       'post_type_options' => memberful_wp_metering_post_type_options(),
-      'form_target'       => memberful_wp_plugin_metering_url(),
+      'form_target'       => memberful_wp_plugin_metering_url( true ),
     )
   );
 }

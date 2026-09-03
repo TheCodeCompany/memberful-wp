@@ -67,12 +67,12 @@ class Memberful_Metering_Access {
       return;
     }
 
-    $user_id  = get_current_user_id();
-    $has_paid = $user_id && (
+    $user_id              = get_current_user_id();
+    $has_plan_or_download = $user_id && (
       ! empty( memberful_wp_user_plans_subscribed_to( $user_id ) )
       || ! empty( memberful_wp_user_downloads( $user_id ) )
     );
-    if ( $has_paid ) {
+    if ( $has_plan_or_download ) {
       self::cache( $post->ID, self::DECISION_IGNORE );
       return;
     }
@@ -116,6 +116,14 @@ class Memberful_Metering_Access {
     }
 
     if ( ! $already_counted ) {
+      // Browsers drop a failed prefetch and load the page normally on click, which is then counted. Serving the
+      // article uncounted instead would let a forged prefetch header read every post for free.
+      if ( self::is_prefetch_request() ) {
+        self::emit_no_cache_headers();
+        status_header( 503 );
+        exit;
+      }
+
       $views[ $post->ID ] = time();
 
       if ( $user_id ) {
@@ -231,6 +239,23 @@ class Memberful_Metering_Access {
   }
 
   /**
+   * Whether the browser fetched this page speculatively (prefetch, prerender, or a Safari preview) rather than for a
+   * reader. Covers Speculation Rules and modern browsers (Sec-Purpose), legacy Chrome (Purpose), Firefox (X-Moz)
+   * and WebKit (X-Purpose).
+   *
+   * @return bool
+   */
+  private static function is_prefetch_request(): bool {
+    foreach ( array( 'HTTP_SEC_PURPOSE', 'HTTP_PURPOSE', 'HTTP_X_MOZ', 'HTTP_X_PURPOSE' ) as $header ) {
+      if ( isset( $_SERVER[ $header ] ) && preg_match( '/prefetch|prerender|preview/i', (string) wp_unslash( $_SERVER[ $header ] ) ) ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Whether the post matches at least one rule group.
    *
    * @param WP_Post $post  Queried post.
@@ -322,7 +347,7 @@ class Memberful_Metering_Access {
         $path    = is_string( $path ) ? $path : '';
         $matches = false;
         foreach ( $values as $fragment ) {
-          if ( '' !== $fragment && false !== strpos( $path, (string) $fragment ) ) {
+          if ( '' !== $fragment && false !== stripos( $path, (string) $fragment ) ) {
             $matches = true;
             break;
           }

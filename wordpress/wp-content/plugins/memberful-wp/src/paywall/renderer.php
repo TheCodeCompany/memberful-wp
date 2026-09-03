@@ -94,7 +94,15 @@ class Memberful_Paywall_Renderer {
    * @return string
    */
   public static function render( array $config, bool $interactive = true ): string {
-    $config = wp_parse_args( $config, Memberful_Paywall_Config::defaults() );
+    $defaults = Memberful_Paywall_Config::defaults();
+    $config   = wp_parse_args( $config, $defaults );
+
+    // A cleared label is stored as an empty string, which would render a button with no text.
+    foreach ( array( 'button_label', 'free_button_label' ) as $key ) {
+      if ( '' === trim( (string) $config[ $key ] ) ) {
+        $config[ $key ] = $defaults[ $key ];
+      }
+    }
 
     $layout = in_array( $config['layout'], Memberful_Paywall_Config::LAYOUTS, true ) ? $config['layout'] : 'card';
     $method = 'render_' . $layout;

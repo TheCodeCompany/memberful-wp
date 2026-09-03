@@ -926,6 +926,11 @@ function memberful_wp_global_marketing() {
     } else {
       update_option( 'memberful_use_global_marketing', false );
     }
+
+    Memberful_Wp_Reporting::report( __( 'Settings updated', 'memberful' ) );
+
+    wp_redirect( memberful_wp_plugin_global_marketing_url() );
+    exit;
   }
 
   $use_global_marketing = get_option( 'memberful_use_global_marketing' );
@@ -943,7 +948,7 @@ function memberful_wp_global_marketing() {
       'global_marketing_content'  => $global_marketing_content,
       'global_marketing_override' => $global_marketing_override,
       'paywall_config'            => Memberful_Paywall_Config::get(),
-      'form_target'               => memberful_wp_plugin_global_marketing_url(),
+      'form_target'               => memberful_wp_plugin_global_marketing_url( true ),
     )
   );
 }

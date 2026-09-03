@@ -19,6 +19,15 @@ composer.lock
 .phpunit.result.cache
 .phpunit.cache
 
+# Per-developer wp-env overrides, e.g. written by `npm run env:local-memberful`
+.wp-env.override.json
+
+# Plugins and themes installed in the local environment (mapped to wp-content)
+/dev/plugins/*
+!/dev/plugins/.gitkeep
+/dev/themes/*
+!/dev/themes/.gitkeep
+
 # Claude Code - https://code.claude.com/docs/en/settings
 .claude/settings.local.json
 .claude/worktrees

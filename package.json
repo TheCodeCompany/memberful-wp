@@ -15,6 +15,7 @@
     "env:cli": "wp-env run cli wp",
     "env:logs": "wp-env logs",
     "env:status": "wp-env status",
+    "env:local-memberful": "bash dev/setup-local-memberful.sh",
     "prepare": "husky"
   },
   "repository": {

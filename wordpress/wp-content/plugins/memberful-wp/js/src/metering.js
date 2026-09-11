@@ -143,25 +143,24 @@
     document.documentElement.classList.add('memberful-metering-tripped');
   };
 
-  const hydrateCountdown = (remaining, root = document) => {
-    const node = root.querySelector('[data-memberful-countdown]');
-    if (!node) {
-      return;
-    }
+  // Hydrate every placeholder on the page: the block may sit in the theme template, the post body, or both.
+  const hydrateCountdown = (remaining) => {
     const count = Math.max(0, remaining);
-    let template;
-    if (count === 0) {
-      template = node.getAttribute('data-memberful-template-last') || '';
-    } else if (count === 1) {
-      template = node.getAttribute('data-memberful-template-singular') || '';
-    } else {
-      template = node.getAttribute('data-memberful-template') || '';
-    }
-    if (template.trim() === '') {
-      return;
-    }
-    node.textContent = template.replace(/\{count\}/g, String(count));
-    node.hidden = false;
+    document.querySelectorAll('[data-memberful-countdown]').forEach((node) => {
+      let template;
+      if (count === 0) {
+        template = node.getAttribute('data-memberful-template-last') || '';
+      } else if (count === 1) {
+        template = node.getAttribute('data-memberful-template-singular') || '';
+      } else {
+        template = node.getAttribute('data-memberful-template') || '';
+      }
+      if (template.trim() === '') {
+        return;
+      }
+      node.textContent = template.replace(/\{count\}/g, String(count));
+      node.hidden = false;
+    });
   };
 
   const runFree = () => {
@@ -218,7 +217,7 @@
         }
 
         record(persist(pruneState(readState())), false);
-        hydrateCountdown(data.remaining || 0, content || container);
+        hydrateCountdown(data.remaining || 0);
       })
       .catch(() => {
         // Endpoint/network failure leaves the cached paywall in place - fail-closed for protected content.

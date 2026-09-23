@@ -25,3 +25,8 @@ composer.lock
 .claude/settings.local.json
 .claude/worktrees
 CLAUDE.local.md
+
+# Local browser QA output (may contain private site data)
+/.playwright-mcp/
+/tests/e2e/results/
+/playwright-report/

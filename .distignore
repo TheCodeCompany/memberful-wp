@@ -12,6 +12,8 @@
 /.wp-env.override.json
 /.editorconfig
 /.idea
+/.playwright-mcp
+/playwright-report
 /dev
 /node_modules
 /vendor

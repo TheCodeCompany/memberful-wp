@@ -19,9 +19,10 @@ function phpData(data) {
 for (const [caseId, mode, paragraphCount] of [
   ['PW-01', 'builder', 2],
   ['PW-02', 'custom_html', 2],
+  ['PW-10', 'builder', 2],
   ...[1, 3, 10].map(count => ['PC-01', 'builder', count]),
 ]) {
-test(`${caseId}: ${mode} paywall shows ${paragraphCount} paragraphs without sending protected text`, async ({ page }) => {
+test(caseId === 'PW-10' ? 'PW-10: entitled subscriber sees the full post without a paywall' : `${caseId}: ${mode} paywall shows ${paragraphCount} paragraphs without sending protected text`, async ({ page }) => {
   const token = randomUUID();
   const paragraphs = Array.from({ length: 12 }, (_, index) => `QA_PARA_${index + 1}_${token}`);
   const secret = `QA_PROTECTED_BODY_${token}`;
@@ -44,6 +45,7 @@ test(`${caseId}: ${mode} paywall shows ${paragraphCount} paragraphs without send
   const recoveryPath = join(tmpdir(), `memberful-qa-${token}.json`);
   writeFileSync(recoveryPath, JSON.stringify({ options: snapshot, postId: null }), { mode: 0o600 });
   let postId;
+  let userId;
   try {
     const fixture = wp(`
       update_option('memberful_metering_config', array('enabled' => false));
@@ -62,11 +64,60 @@ test(`${caseId}: ${mode} paywall shows ${paragraphCount} paragraphs without send
         'post_content' => ${phpData(paragraphs.map(text => `<p>${text}</p>`).join('') + `<p>${secret}</p>`)},
       ), true);
       if (is_wp_error($post_id)) throw new RuntimeException($post_id->get_error_message());
-      memberful_wp_set_post_available_to_anybody_subscribed_to_a_plan($post_id, ${process.env.QA_NEGATIVE_CONTROL === '1' ? 'false' : 'true'});
-      echo wp_json_encode(array('id' => $post_id, 'url' => get_permalink($post_id)));
+      memberful_wp_set_post_available_to_anybody_subscribed_to_a_plan($post_id, ${process.env.QA_NEGATIVE_CONTROL === '1' && caseId !== 'PW-10' ? 'false' : 'true'});
+      echo wp_json_encode(array('id' => $post_id, 'url' => get_permalink($post_id), 'loginUrl' => wp_login_url(get_permalink($post_id))));
     `);
     postId = fixture.id;
     writeFileSync(recoveryPath, JSON.stringify({ options: snapshot, postId }), { mode: 0o600 });
+    if (caseId === 'PW-10') {
+      const anonymous = await page.goto(fixture.url);
+      expect(anonymous.status()).toBe(200);
+      expect(await anonymous.text(), 'fixture must be protected for anonymous visitors').not.toContain(secret);
+      await expect(page.locator('.memberful-paywall--card')).toBeVisible();
+
+      const username = `qa_${token}`;
+      const password = randomUUID();
+      userId = wp(`
+        $id = wp_insert_user(array(
+          'user_login' => ${phpData(username)}, 'user_pass' => ${phpData(password)},
+          'user_email' => ${phpData(`${username}@example.invalid`)}, 'role' => 'subscriber'
+        ));
+        if (is_wp_error($id)) throw new RuntimeException($id->get_error_message());
+        echo wp_json_encode($id);
+      `);
+      writeFileSync(recoveryPath, JSON.stringify({ options: snapshot, postId, userId }), { mode: 0o600 });
+      wp(`
+        if (user_can(${userId}, 'edit_posts')) throw new RuntimeException('Fixture must not have editorial access');
+        Memberful_Wp_User_Subscriptions::sync(${userId}, array((object) array(
+          'activated_at' => time(), 'renew_at_end_of_period' => true,
+          'expires' => true, 'expires_at' => time() + DAY_IN_SECONDS,
+          'subscription' => (object) array('id' => 999999999),
+          'in_trial_period' => false, 'trial_start_at' => null, 'trial_end_at' => null
+        )));
+        echo wp_json_encode(true);
+      `);
+      await page.goto(fixture.loginUrl);
+      await page.locator('#user_login').fill(username);
+      await page.locator('#user_pass').fill(password);
+      await Promise.all([
+        page.waitForURL(fixture.url),
+        page.locator('#wp-submit').click(),
+      ]);
+      expect((await page.context().cookies()).some(cookie => cookie.name.startsWith('wordpress_logged_in_')),
+        'WordPress login must succeed before checking access').toBe(true);
+      if (process.env.QA_NEGATIVE_CONTROL === '1') {
+        wp(`Memberful_Wp_User_Subscriptions::sync(${userId}, array()); echo wp_json_encode(true);`);
+      }
+      const memberResponse = await page.goto(fixture.url, { waitUntil: 'networkidle' });
+      expect(memberResponse.status()).toBe(200);
+      expect(await memberResponse.text(), 'entitled member must receive protected text').toContain(secret);
+      for (const text of [...paragraphs, secret]) await expect(page.locator('body')).toContainText(text);
+      await expect(page.locator('.memberful-paywall, .memberful-global-teaser-content')).toHaveCount(0);
+      await expect(page.locator('link[href*="/stylesheets/paywall.css"]')).toHaveCount(0);
+      expect(await page.evaluate(() => [...document.styleSheets].some(sheet =>
+        sheet.href?.includes('/stylesheets/paywall.css')))).toBe(false);
+      return;
+    }
     const response = await page.goto(fixture.url, { waitUntil: 'networkidle' });
     expect(response.status()).toBe(200);
     const source = await response.text();
@@ -97,6 +148,11 @@ test(`${caseId}: ${mode} paywall shows ${paragraphCount} paragraphs without send
     wp(`
       $post_id = ${postId || 0};
       if ($post_id) wp_delete_post($post_id, true);
+      $user_id = ${userId || 0};
+      if ($user_id) {
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+        wp_delete_user($user_id);
+      }
       foreach (${phpData(snapshot)} as $key => $item) {
         if ($item['exists']) update_option($key, $item['value']);
         else delete_option($key);
@@ -107,6 +163,7 @@ test(`${caseId}: ${mode} paywall shows ${paragraphCount} paragraphs without send
         }
       }
       if ($post_id && get_post($post_id)) throw new RuntimeException('Temporary post was not removed');
+      if ($user_id && get_user_by('id', $user_id)) throw new RuntimeException('Temporary user was not removed');
       echo wp_json_encode(true);
     `);
     unlinkSync(recoveryPath);

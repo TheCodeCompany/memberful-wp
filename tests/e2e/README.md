@@ -32,8 +32,15 @@ Implemented coverage:
 | PW-01 | Card visible, two teaser paragraphs, Subscribe URL, CSS loaded, protected text absent from response and DOM |
 | PW-02 | Custom HTML rendered, two teaser paragraphs, no builder card or stylesheet, legacy fade CSS, no protected text |
 | PC-01 (rendering) | Exactly 1, 3, or 10 paragraphs; subsequent paragraphs absent from the response |
+| PW-10 (subscriber) | Anonymous visitor is blocked; a logged-in Subscriber with a seeded active plan receives all paragraphs with no paywall, teaser wrapper, or paywall CSS |
 
-Settings are seeded through WP-CLI. Admin save/validation, preview, entitled members,
+Settings are seeded through WP-CLI. PW-10 creates a temporary Subscriber, seeds local
+subscription data through the plugin's sync class, and logs in through the WordPress
+login form. It does not exercise Memberful SSO, billing, or remote sync. Trial,
+download, and administrator variants are not yet covered. The user is deleted in
+`finally`, and cleanup verifies deletion.
+
+Admin save/validation, preview,
 listings, Beaver Builder, and recipe coverage remain to be added one case at a time.
 MR-5 (including the cache-safe fix) and MR-15 are outside this suite's current scope.
 Local checkout results are not packaged release-candidate certification.
@@ -48,9 +55,15 @@ This deliberately leaves the temporary post unprotected and must fail with
 `protected text must not be sent over HTTP`. A different failure is not a successful
 negative control. The cleanup still runs. Then run normally to confirm a pass.
 
+For the member-access negative control, run
+`QA_NEGATIVE_CONTROL=1 npm run test:e2e -- --grep PW-10`.
+This keeps the post protected and the user logged in, but removes the user's plan
+before reloading. It must fail with `entitled member must receive protected text`.
+
 Failure screenshots and reports stay in ignored `tests/e2e/results/`; they may contain
 private site data and should not be committed or shared unreviewed. Traces are off.
 A private `memberful-qa-<uuid>.json` recovery snapshot is written to the OS temporary
 directory before mutation and deleted after successful cleanup. If the process is
 forcibly terminated, use its `options` (including each option's `exists` flag) and
-`postId` to restore the site before continuing. Do not commit that snapshot.
+`postId` to restore the site before continuing. For PW-10, also delete the temporary
+user identified by `userId`. Do not commit that snapshot.
